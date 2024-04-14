@@ -9,17 +9,30 @@ import { ShowDocVersionsDialogComponent } from '../dialogs/show-doc-versions-dia
 import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
 import { AddDocDialogComponent } from '../dialogs/add-doc-dialog.component';
-
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, KTableComponent, MatButtonModule],
   providers: [GenericServiceService<Documento>, MatDialog],
   // templateUrl: './app.component.html',
-  template: ` <router-outlet></router-outlet>`,
+  template: ` <div class="btn-align-end">
+      <button mat-raised-button color="primary" (click)="AddDocument()">
+        Add Document
+      </button>
+      <button mat-raised-button color="primary">Add Dita Topic</button>
+    </div>
+    <k-table
+      [columns]="colums"
+      [dataSource]="this.docsService.getAllRes()"
+      [trackByProperty]="'id'"
+      [Buttons]="{ view: true, edit: true, Delete: true }"
+      (OnViewClick)="openDialog($event)"
+      (OnDeleteClick)="deleteDoc($event)"
+    ></k-table>`,
+  host: { class: 'margin-block d-block' },
   styles: [],
 })
-export class AppComponent {
+export class DocumentsComponent {
   title = 'DitaTopic';
   docsService = inject(GenericServiceService<Documento>);
   dialog = inject(MatDialog);
