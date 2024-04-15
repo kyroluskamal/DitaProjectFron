@@ -8,14 +8,25 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   {
     path: 'createuser',
-    component: RegisterComponent,
+    loadComponent() {
+      return import('./register.component').then((m) => m.RegisterComponent);
+    },
     canActivate: [authGuard],
   },
 
   {
     path: 'documents',
-    component: DocumentsComponent,
-    canActivate: [authGuard],
+    loadComponent() {
+      return import('./documents.component').then((m) => m.DocumentsComponent);
+    },
   },
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  {
+    path: 'documents/:docId',
+    loadComponent() {
+      return import('./document-edit.component').then(
+        (m) => m.DocumentEditComponent
+      );
+    },
+  },
+  { path: '', redirectTo: 'documents', pathMatch: 'full' },
 ];

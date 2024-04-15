@@ -2,7 +2,13 @@
 
 html,
 body {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4; /* light grey background for a subtle, professional look */
+  color: #333; /* dark grey text for readability */
 }
 body {
   margin: 0;
@@ -43,4 +49,69 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
+}
+
+.success {
+  .mdc-snackbar__surface {
+    background-color: rgb(39, 132, 39) !important;
+  }
+
+  .mdc-button .mdc-button__label {
+    color: rgb(255, 142, 142) !important;
+  }
+}
+.warning {
+  .mdc-snackbar__surface {
+    background-color: rgb(216, 181, 97) !important;
+  }
+  .mdc-button .mdc-button__label {
+    color: rgb(255, 142, 142) !important;
+  }
+}
+
+.error {
+  background-color: rgb(136, 66, 66) !important;
+
+  .mdc-button .mdc-button__label {
+    color: white !important;
+  }
+}
+mat-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-name {
+  font-weight: bold;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.user-info {
+  margin-right: 20px; /* Spacing before buttons */
+}
+.bodyContainer {
+  flex-grow: 1; /* makes the main content take up the rest of the space */
+  overflow-y: auto;
+  // margin: 0 auto; /* centers the container */
+  padding-right: 10%;
+  padding-left: 10%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* subtle shadow for a "lifted" effect */
+  background-color: #fff; /* white background for the main content area */
+}
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px; /* space between cards */
+  padding: 20px; /* padding around the content area */
+  justify-content: start; /* centers cards horizontally */
+}
+.doc-card {
+  width: 300px; /* width of the card */
+  background-color: #fff; /* white background for the card */
+  box-shadow: 1px 2px 5px 0px rgba(0, 0, 0, 0.2),
+    1px 1px 3px 0px rgba(0, 0, 0, 0.14), 0px -2px 10px 0px rgba(0, 0, 0, 0.12) !important;
 }

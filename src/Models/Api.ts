@@ -1,12 +1,14 @@
 import { environment } from '../environments/environment.development';
 
 export const DocumentsApi = {
-  baseUrl: `${environment.apiUrl}/api/Documents`,
+  baseUrl: `${environment.apiUrl}/Documents`,
 
   getById(id: number) {
     return `${this.baseUrl}/${id}`;
   },
-
+  getAll() {
+    return this.baseUrl;
+  },
   create() {
     return this.baseUrl;
   },
@@ -69,7 +71,7 @@ export const DocumentsApi = {
 };
 
 export const DitaTopicsApi = {
-  baseUrl: `${environment.apiUrl}/api/DitaTopics`,
+  baseUrl: `${environment.apiUrl}/DitaTopics`,
 
   getAll() {
     return this.baseUrl;
@@ -113,9 +115,9 @@ export const DitaTopicsApi = {
 };
 
 export const authApi = {
-  usersBaseUrl: `${environment.apiUrl}/api/users`,
-  baseUrl: `${environment.apiUrl}/api`,
-  rolesBaseUrl: `${environment.apiUrl}/api/roles`,
+  usersBaseUrl: `${environment.apiDomain}/users`,
+  baseUrl: `${environment.apiDomain}`,
+  rolesBaseUrl: `${environment.apiDomain}/roles`,
 
   login() {
     return `${this.baseUrl}/login`;
@@ -128,7 +130,9 @@ export const authApi = {
   getUserById(id: number) {
     return `${this.usersBaseUrl}/${id}`;
   },
-
+  getUserByEmail(email: string) {
+    return `${this.usersBaseUrl}/${email}`;
+  },
   updateUser(id: number) {
     return `${this.usersBaseUrl}/${id}`;
   },
@@ -146,5 +150,9 @@ export const authApi = {
   },
   getRolesOfUserId(id: number) {
     return `${this.rolesBaseUrl}/${id}/`;
+  },
+
+  getRoleByEmail(email: string) {
+    return `${this.rolesBaseUrl}/${email}`;
   },
 };

@@ -1,3 +1,5 @@
+import { FormArray, FormControl, FormGroup } from '@angular/forms';
+
 class CommonModel {
   public id: number = 0;
 }
@@ -5,15 +7,27 @@ class CommonModel {
 export class DocVersion extends CommonModel {
   public versionNumber: string = '';
   public createdAt: Date = new Date();
-  public ditaMapXml: string = '';
-  public pdFfilePath: string = '';
-  public ditaMapFilePath: string = '';
+
   public documentId: number = 0;
   public document?: Documento;
   public ditaTopicVersions: DocVersionDitatopicVersion[] = [];
   public ditaTopics: DitaTopic[] = [];
+  public Roles: DocVersionsRoles[] = [];
 }
 
+export class DocVersionsRoles {
+  public roleId: number = 0;
+  public role?: IdentityRole;
+  public docVersionId: number = 0;
+  public docVersion?: DocVersion;
+  public ditaMapXml: string = '';
+  public ditaMapFilePath: string = '';
+  public PDFfilePath: string = '';
+}
+export class IdentityRole {
+  public id: number = 0;
+  public name: string = '';
+}
 export class Documento extends CommonModel {
   public title: string = '';
   public authorId: number = 0;
@@ -128,10 +142,12 @@ export class StepViewModel extends CommonModel {
   public taskId: number = 0;
 }
 export class ApplicationUser {
+  public id: number = 0;
   public firstName: string = '';
   public lastName: string = '';
   public email: string = '';
   public password: string = '';
+  public roles: string[] = [];
 }
 
 export class AppRegisterRequest {
@@ -140,4 +156,33 @@ export class AppRegisterRequest {
   public firstName: string = '';
   public lastName: string = '';
   public role: string = '';
+}
+export class LoginRequest {
+  public email: string = '';
+  public password: string = '';
+}
+export class LoginResponse {
+  public accessToken: string = '';
+  public refreshToken: string = '';
+}
+export class SuccessResponse {
+  public message: string = '';
+  public data: any = {};
+}
+export const roles = {
+  Technician: 'Technician',
+  Admin: 'Admin',
+  Analyst: 'Analyst',
+  Developer: 'Developer',
+};
+export type ModelFormGroup<T> = FormGroup<{
+  [K in keyof T]: T[K] extends Array<infer U>
+    ? FormArray<FormGroup<{ [P in keyof U]: FormControl<U[P]> }>>
+    : FormControl<T[K]>;
+}>;
+
+export enum DitaTopicType {
+  Concept = 0,
+  Task = 1,
+  Reference = 2,
 }

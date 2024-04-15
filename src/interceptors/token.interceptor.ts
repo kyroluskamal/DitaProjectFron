@@ -1,8 +1,16 @@
+import { isPlatformBrowser } from '@angular/common';
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { PLATFORM_ID, inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
+import { NotificationsService } from '../services/notifications.service';
 
 export const TokenResponseInterceptor: HttpInterceptorFn = (req, next) => {
-  const authToken = localStorage.getItem('token');
+  const PlatForm_ID = inject(PLATFORM_ID);
+  const authToken = isPlatformBrowser(PlatForm_ID)
+    ? localStorage.getItem('token')
+    : '';
+  const notifications = inject(NotificationsService);
+
   // Clone the request and add the authorization header
   const authReq = req.clone({
     setHeaders: {
@@ -12,6 +20,7 @@ export const TokenResponseInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((err: any) => {
       if (err instanceof HttpErrorResponse) {
+        if (err.status > 0) notifications.error(err.error.message, 'Close');
         // Handle HTTP errors
         if (err.status === 401) {
           // Specific handling for unauthorized errors

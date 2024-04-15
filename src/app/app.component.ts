@@ -1,70 +1,97 @@
-import { Component, Inject, inject } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import {
+  ActivatedRoute,
+  NavigationEnd,
+  Router,
+  RouterLink,
+  RouterOutlet,
+} from '@angular/router';
 import { KTableComponent } from '../Generic components/k-table.component';
-import { GenericServiceService } from '../services/generic-service.service';
-import { Documento } from '../Models/models';
+import { ApplicationUser, Documento } from '../Models/models';
 import { environment } from '../environments/environment.development';
 import { MatDialog } from '@angular/material/dialog';
 import { ShowDocVersionsDialogComponent } from '../dialogs/show-doc-versions-dialog.component';
 import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
-import { AddDocDialogComponent } from '../dialogs/add-doc-dialog.component';
+import { GenericService } from '../services/generic.service';
+import { AuthService } from '../services/auth.service';
+import { LocalStorageService } from '../services/local-storage.service';
+import { MatToolbarModule } from '@angular/material/toolbar';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, KTableComponent, MatButtonModule],
-  providers: [GenericServiceService<Documento>, MatDialog],
-  // templateUrl: './app.component.html',
-  template: ` <router-outlet></router-outlet>`,
-  styles: [],
+  imports: [
+    RouterOutlet,
+    KTableComponent,
+    MatButtonModule,
+    MatToolbarModule,
+    RouterLink,
+  ],
+  providers: [GenericService<Documento, Documento>, MatDialog],
+  template: `
+    @if (!isCurrectRouteLoginIn()) {
+    <mat-toolbar color="primary">
+      <!-- Application Name -->
+      <span class="app-name">My Application</span>
+
+      <!-- Spacer to push the rest to the right -->
+
+      <span class="toolbar-spacer"></span>
+
+      @if (AuthService.isloggedIn()) {
+      <!-- Username and Role -->
+      <span class="user-info">
+        {{ this.AuthService.currentUser().firstName }}
+        {{ this.AuthService.currentUser().lastName }}
+        ({{ this.AuthService.currentUser().roles[0] }})
+      </span>
+      }@else{
+      <!-- Login Buttons -->
+      <button mat-button routerLink="/login">Login</button>
+      }
+    </mat-toolbar>
+    } @if (!isCurrectRouteLoginIn()) {
+
+    <div class="bodyContainer">
+      <router-outlet></router-outlet>
+    </div>
+    }@else{
+
+    <router-outlet></router-outlet>
+    }
+  `,
+  styles: [
+    `
+      :host {
+        display: contents;
+      }
+    `,
+  ],
 })
 export class AppComponent {
   title = 'DitaTopic';
-  docsService = inject(GenericServiceService<Documento>);
-  dialog = inject(MatDialog);
-  colums = [
-    { property: 'id', displayText: 'No.' },
-    { property: 'title', displayText: 'Title' },
-  ];
-
+  local = inject(LocalStorageService);
+  AuthService = inject(AuthService);
+  isCurrectRouteLoginIn = signal(false);
+  constructor(private router: Router) {
+    this.router.events.subscribe((val) => {
+      // see also
+      if (val instanceof NavigationEnd) {
+        console.log(val.url === '/login');
+        this.isCurrectRouteLoginIn.set(val.url === '/login');
+      }
+    });
+  }
   ngOnInit() {
-    this.docsService.getAllSubsciption(`${environment.apiUrl}/Documents`);
-  }
-
-  openDialog(documento: Documento): void {
-    const dialogRef = this.dialog.open(ShowDocVersionsDialogComponent, {
-      width: '40vw',
-      data: documento,
-    });
-  }
-
-  deleteDoc(documento: Documento) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '300px',
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.docsService.Delete(
-          `${environment.apiUrl}/Documents/${documento.id}`
-        );
-      }
-    });
-  }
-
-  AddDocument() {
-    const dialogRed = this.dialog.open(AddDocDialogComponent, {
-      width: '40vw',
-    });
-
-    dialogRed.afterClosed().subscribe((result) => {
-      if (result) {
-        this.docsService.postSubsciption(
-          `${environment.apiUrl}/Documents`,
-          result
-        );
-      }
-    });
+    if (!this.local.getItem('token')) {
+      this.AuthService.logout();
+    } else {
+      this.AuthService.isloggedIn.set(true);
+      this.AuthService.currentUser.set(
+        JSON.parse(this.local.getItem('user')) as ApplicationUser
+      );
+      this.AuthService.validateRole(this.AuthService.currentUser().roles[0]);
+    }
   }
 }

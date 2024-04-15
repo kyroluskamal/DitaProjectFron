@@ -57,9 +57,9 @@ export class ShowDocVersionsDialogComponent {
   selectedVersion: DocVersion = new DocVersion();
 
   OpenPdf() {
-    window.open(
-      `${environment.apiDomain}/${this.selectedVersion.pdFfilePath}`,
-      '_blank'
-    );
+    // window.open(
+    //   `${environment.apiDomain}/${this.selectedVersion.pdFfilePath}`,
+    //   '_blank'
+    // );
   }
 }
