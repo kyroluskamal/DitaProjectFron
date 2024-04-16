@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import {
   MAT_DIALOG_DATA,
   MatDialogActions,
@@ -8,8 +8,10 @@ import {
   MatDialogTitle,
 } from '@angular/material/dialog';
 import {
+  DitaTopic,
   DitaTopicModelView,
   DitaTopicType,
+  DitaTopicVersionViewModel,
   Documento,
   ModelFormGroup,
   StepViewModel,
@@ -32,7 +34,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 
 @Component({
-  selector: 'app-dita-topic-dialog',
+  selector: 'app-add-dita-topic-version',
   standalone: true,
   imports: [
     MatFormFieldModule,
@@ -51,19 +53,9 @@ import { MatListModule } from '@angular/material/list';
     MatListModule,
   ],
   template: `
-    <h2 mat-dialog-title>Doc title : {{ doc().title }}</h2>
+    <h2 mat-dialog-title>Doc title : {{ ditatTopic().title }}</h2>
     <div mat-dialog-content>
       <form [formGroup]="dtForm">
-        <mat-form-field appearance="outline" class="w-100">
-          <mat-label>Title</mat-label>
-          <input matInput placeholder="Title" formControlName="title" />
-        </mat-form-field>
-
-        <mat-list>
-          <mat-list-item>Insert First Version</mat-list-item>
-          <mat-divider></mat-divider>
-        </mat-list>
-
         <mat-form-field appearance="outline" class="w-100">
           <mat-label>Version Number</mat-label>
           <input
@@ -166,38 +158,32 @@ import { MatListModule } from '@angular/material/list';
   `,
   styles: ``,
 })
-export class DitaTopicDialogComponent {
+export class DitaTopicVersionComponent implements OnInit {
   dialogData = inject(MAT_DIALOG_DATA);
 
   roleService = inject(ROLE_SERVICE);
-  doc = signal<Documento>(this.dialogData.doc);
+  ditatTopic = signal<DitaTopic>(this.dialogData.dt);
 
-  dtForm: ModelFormGroup<
-    Pick<
-      DitaTopicModelView,
-      | 'steps'
-      | 'body'
-      | 'id'
-      | 'shortDescription'
-      | 'documentId'
-      | 'type'
-      | 'title'
-      | 'roles'
-      | 'versionNumber'
-    >
-  > = this.fb.nonNullable.group({
-    roles: this.fb.nonNullable.control<number[]>([], Validators.required),
-    steps: this.fb.nonNullable.array<ModelFormGroup<StepViewModel>>([]),
-    body: ['', [Validators.required]],
-    id: [0],
-    shortDescription: [''],
-    documentId: [this.doc().id],
-    type: [-1, Validators.required],
-    title: ['', [Validators.required]],
-    versionNumber: ['', [Validators.required]],
-  });
+  dtForm: ModelFormGroup<DitaTopicVersionViewModel> = this.fb.nonNullable.group(
+    {
+      id: [0],
+      roles: this.fb.nonNullable.control<number[]>([], Validators.required),
+      shortDescription: [''],
+      steps: this.fb.nonNullable.array<ModelFormGroup<StepViewModel>>([]),
+      body: ['', [Validators.required]],
+      ditaTopicId: [this.ditatTopic().id],
+      type: [-1, Validators.required],
+      versionNumber: ['', [Validators.required]],
+    }
+  );
   ditaTopicSeletectType = 0;
   constructor(private fb: FormBuilder) {}
+  ngOnInit(): void {
+    console.log(this.dialogData);
+    if (this.dialogData.action == 'edit') {
+      this.dtForm.patchValue(this.dialogData.dtv);
+    }
+  }
 
   get steps() {
     return this.dtForm.controls.steps as FormArray<
