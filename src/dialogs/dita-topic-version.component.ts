@@ -12,8 +12,12 @@ import {
   DitaTopicModelView,
   DitaTopicType,
   DitaTopicVersionViewModel,
+  DitaTopicVersionsRoles,
+  DitatopicVersion,
   Documento,
+  IdentityRole,
   ModelFormGroup,
+  Step,
   StepViewModel,
 } from '../Models/models';
 import {
@@ -53,7 +57,17 @@ import { MatListModule } from '@angular/material/list';
     MatListModule,
   ],
   template: `
-    <h2 mat-dialog-title>Doc title : {{ ditatTopic().title }}</h2>
+    <h2 mat-dialog-title>
+      {{
+        dialogData.action == 'edit'
+          ? ditaTopicVersion().type == 0
+            ? 'Concept'
+            : 'Task'
+          : 'Dita Topic'
+      }}
+      title :
+      {{ ditatTopic().title }}
+    </h2>
     <div mat-dialog-content>
       <form [formGroup]="dtForm">
         <mat-form-field appearance="outline" class="w-100">
@@ -78,8 +92,8 @@ import { MatListModule } from '@angular/material/list';
             formControlName="type"
             (selectionChange)="generateForm($event.value)"
           >
-            <mat-option value="0">Concept</mat-option>
-            <mat-option value="1">Task</mat-option>
+            <mat-option [value]="0">Concept</mat-option>
+            <mat-option [value]="1">Task</mat-option>
           </mat-select>
         </mat-form-field>
         <mat-form-field style="width: 100%;" appearance="outline">
@@ -108,11 +122,6 @@ import { MatListModule } from '@angular/material/list';
               'undo redo | formatselect | bold italic backcolor |        alignleft aligncenter alignright alignjustify |        bullist numlist outdent indent | removeformat | help'
           }"
         ></editor>
-        <!-- <mat-form-field appearance="outline">
-          <mat-label>Body</mat-label>
-          <textarea matInput placeholder="Body" formControlName="body">
-          </textarea>
-        </mat-form-field> -->
         }@else if(dtForm.controls.type.value == 1){
         <ng-container formArrayName="steps">
           <mat-label>Steps</mat-label>
@@ -163,7 +172,7 @@ export class DitaTopicVersionComponent implements OnInit {
 
   roleService = inject(ROLE_SERVICE);
   ditatTopic = signal<DitaTopic>(this.dialogData.dt);
-
+  ditaTopicVersion = signal<DitaTopicVersionViewModel>(this.dialogData.dtv);
   dtForm: ModelFormGroup<DitaTopicVersionViewModel> = this.fb.nonNullable.group(
     {
       id: [0],
@@ -179,9 +188,11 @@ export class DitaTopicVersionComponent implements OnInit {
   ditaTopicSeletectType = 0;
   constructor(private fb: FormBuilder) {}
   ngOnInit(): void {
-    console.log(this.dialogData);
     if (this.dialogData.action == 'edit') {
+      if (this.dialogData.dtv.steps)
+        (this.dialogData.dtv.steps as Step[]).forEach((s) => this.addStep());
       this.dtForm.patchValue(this.dialogData.dtv);
+      this.dtForm.controls.type.disable();
     }
   }
 

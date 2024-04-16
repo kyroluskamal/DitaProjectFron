@@ -100,6 +100,23 @@ export class GenericService<BodyType, ResponseType> {
       });
   }
 
+  public DeleteObservable(url: string, headers?: HttpHeaders) {
+    return this.httpClient
+      .delete<SuccessResponse>(`${url}`, { headers: headers })
+      .pipe(
+        tap((res) => {
+          this.getAllRes.update((d) =>
+            d.filter(
+              (item) =>
+                item['id' as keyof ResponseType] !== res['data' as keyof Object]
+            )
+          );
+          this.notifications.sucess(res.message, 'Close');
+          this.deleteRes.set(res as ResponseType);
+        })
+      );
+  }
+
   public multiRequest(
     urls: {
       url: string;

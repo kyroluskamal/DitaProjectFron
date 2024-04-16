@@ -60,12 +60,8 @@ import { DitaTopicVersionComponent } from '../dialogs/dita-topic-version.compone
         </mat-card-content>
         <mat-card-actions align="end">
           @if(selectedVersion !== null){
-          <button
-            mat-icon-button
-            color="primary"
-            (click)="DitaTopicVersion(dt)"
-          >
-            <mat-icon fontIcon="add_circle"></mat-icon>
+          <button mat-button color="warn" (click)="DeleteVersion()">
+            Delete Version
           </button>
           <button
             mat-icon-button
@@ -76,6 +72,13 @@ import { DitaTopicVersionComponent } from '../dialogs/dita-topic-version.compone
           </button>
 
           }
+          <button
+            mat-icon-button
+            color="primary"
+            (click)="DitaTopicVersion(dt)"
+          >
+            <mat-icon fontIcon="add_circle"></mat-icon>
+          </button>
           <button mat-icon-button color="warn" (click)="DeleteDitaTopic(dt)">
             <mat-icon fontIcon="delete"></mat-icon>
           </button>
@@ -144,20 +147,65 @@ export class DocumentEditComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.ditaTopicService
-          .postObservable(DitaTopicsApi.createVersion(), result)
-          .subscribe((res) => {
-            this.docService.getBy.update((d) => {
-              d.ditaTopics = d.ditaTopics.map((d) =>
-                d.id === dt.id
-                  ? {
-                      ...d,
-                      ditatopicVersions: [...d.ditatopicVersions, res.data],
-                    }
-                  : d
-              );
-              return d;
+        if (action === 'add')
+          this.ditaTopicService
+            .postObservable(DitaTopicsApi.createVersion(), result)
+            .subscribe((res) => {
+              this.docService.getBy.update((d) => {
+                d.ditaTopics
+                  .find((d) => d.id === dt.id)
+                  ?.ditatopicVersions.push(res.data as DitatopicVersion);
+                return d;
+              });
             });
+        else {
+          this.ditaTopicService
+            .putObservable(DitaTopicsApi.updateVersion(result.id), result)
+            .subscribe((res) => {
+              this.docService.getBy.update((d) => {
+                const dt = d.ditaTopics.find(
+                  (d) => d.id === result.ditaTopicId
+                );
+                dt?.ditatopicVersions.forEach((v) => {
+                  if (v.id === result.id) {
+                    v = result;
+                  }
+                });
+                return d;
+              });
+            });
+        }
+      }
+    });
+  }
+
+  DeleteVersion() {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '250px',
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.ditaTopicService
+          .DeleteObservable(
+            DitaTopicsApi.deleteVersion(this.selectedVersion?.id!)
+          )
+          .subscribe({
+            next: (res) => {
+              this.docService.getBy.update((d) => {
+                d.ditaTopics.forEach((d) => {
+                  if (d.id === this.selectedVersion?.ditaTopicId) {
+                    d.ditatopicVersions = d.ditatopicVersions.filter(
+                      (v) => v.id !== this.selectedVersion?.id
+                    );
+                  }
+                });
+                this.selectedVersion = null;
+                return d;
+              });
+            },
+            error: (error) => {
+              console.error('There was an error!', error);
+            },
           });
       }
     });

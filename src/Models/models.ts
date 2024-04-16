@@ -81,7 +81,12 @@ export class Step extends CommonModel {
   public taskVersionId: number = 0;
   public taskVersion?: TaskVersion;
 }
-
+export class DitaTopicVersionsRoles {
+  public roleId: number = 0;
+  public role?: IdentityRole;
+  public ditatopicVersionId: number = 0;
+  public ditatopicVersion?: DitatopicVersion;
+}
 export class DocVersionDitatopicVersion {
   public docVersionId: number = 0;
   public ditatopicVersionId: number = 0;
