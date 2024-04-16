@@ -12,6 +12,14 @@
           "skipTests": true,
           "inlineStyle": true,
           "inlineTemplate": true
+        },
+        "@schematics/angular:directive": {
+          "flat": true,
+          "skipTests": true
+        },
+        "@schematics/angular:service": {
+          "flat": true,
+          "skipTests": false
         }
       },
       "root": "",

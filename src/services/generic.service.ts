@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, forkJoin } from 'rxjs';
+import { Observable, forkJoin, tap } from 'rxjs';
 import { NotificationsService } from './notifications.service';
 import { SuccessResponse } from '../Models/models';
 
@@ -29,8 +29,6 @@ export class GenericService<BodyType, ResponseType> {
   }
   //getBy
   public getBySubsciption(url: string, headers?: HttpHeaders) {
-    console.log('getBySubsciption');
-
     this.httpClient
       .get<ResponseType>(`${url}`, { headers: headers })
       .subscribe((data) => {
@@ -47,16 +45,24 @@ export class GenericService<BodyType, ResponseType> {
       .post<SuccessResponse>(`${url}`, body, { headers: headers })
       .subscribe((res) => {
         this.notifications.sucess(res.message, 'Close');
-
+        console.log(res.data);
         this.postRes.set(res.data as ResponseType);
         this.getAllRes.update((d) => [...d, res.data as ResponseType]);
       });
   }
 
   public postObservable(url: string, body: BodyType, headers?: HttpHeaders) {
-    return this.httpClient.post<ResponseType>(`${url}`, body, {
-      headers: headers,
-    });
+    return this.httpClient
+      .post<SuccessResponse>(`${url}`, body, {
+        headers: headers,
+      })
+      .pipe(
+        tap((res) => {
+          this.notifications.sucess(res.message, 'Close');
+          this.postRes.set(res.data as ResponseType);
+          this.getAllRes.update((d) => [...d, res.data as ResponseType]);
+        })
+      );
   }
 
   public putSubsciption(url: string, body: BodyType, headers?: HttpHeaders) {

@@ -42,7 +42,7 @@ export abstract class DitaTopic extends CommonModel {
   public createdAt: Date = new Date();
   public documentId: number = 0;
   public document?: Documento;
-  public ditaTopicVersions: DitatopicVersion[] = [];
+  public ditatopicVersions: DitatopicVersion[] = [];
 }
 
 export abstract class DitatopicVersion extends CommonModel {
@@ -98,6 +98,7 @@ export class DitaTopicModelView extends CommonModel {
   public versionNumber: string = '';
   public body: string = '';
   public steps: StepViewModel[] = [];
+  public roles: number[] = [];
 }
 
 export class DitaTopicUpdateViewModel {
@@ -115,6 +116,7 @@ export class DitaTopicVersionViewModel extends CommonModel {
   public versionNumber: string = '';
   public body: string = '';
   public steps: StepViewModel[] = [];
+  public roles: number[] = [];
 }
 
 export class DocVersionViewModel extends CommonModel {
@@ -177,7 +179,9 @@ export const roles = {
 };
 export type ModelFormGroup<T> = FormGroup<{
   [K in keyof T]: T[K] extends Array<infer U>
-    ? FormArray<FormGroup<{ [P in keyof U]: FormControl<U[P]> }>>
+    ? U extends object
+      ? FormArray<FormGroup<{ [P in keyof U]: FormControl<U[P]> }>>
+      : FormControl<U[]>
     : FormControl<T[K]>;
 }>;
 

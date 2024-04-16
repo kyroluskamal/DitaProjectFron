@@ -22,3 +22,11 @@ export const LOGIN_SERVICE = new InjectionToken<
   providedIn: LoginComponent,
   factory: () => new GenericService<LoginRequest, any>(),
 });
+
+export const ROLE_SERVICE = new InjectionToken<GenericService<any, any>>(
+  'ROLE_SERVICE',
+  {
+    providedIn: 'root',
+    factory: () => new GenericService<any, any>(),
+  }
+);

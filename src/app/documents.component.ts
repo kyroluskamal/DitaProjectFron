@@ -117,7 +117,7 @@ export class DocumentsComponent {
   }
 
   openDialog(documento: Documento): void {
-    const dialogRef = this.dialog.open(ShowDocVersionsDialogComponent, {
+    this.dialog.open(ShowDocVersionsDialogComponent, {
       width: '40vw',
       data: documento,
     });
