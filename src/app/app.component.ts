@@ -1,6 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
 import {
-  ActivatedRoute,
   NavigationEnd,
   Router,
   RouterLink,
@@ -8,10 +7,7 @@ import {
 } from '@angular/router';
 import { KTableComponent } from '../Generic components/k-table.component';
 import { ApplicationUser, Documento } from '../Models/models';
-import { environment } from '../environments/environment.development';
 import { MatDialog } from '@angular/material/dialog';
-import { ShowDocVersionsDialogComponent } from '../dialogs/show-doc-versions-dialog.component';
-import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
 import { GenericService } from '../services/generic.service';
 import { AuthService } from '../services/auth.service';
@@ -41,12 +37,13 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
       @if (AuthService.isloggedIn()) {
       <!-- Username and Role -->
+      @if (AuthService.currentUser() !== null) {
       <span class="user-info">
-        {{ this.AuthService.currentUser().firstName }}
-        {{ this.AuthService.currentUser().lastName }}
-        ({{ this.AuthService.currentUser().roles[0] }})
+        {{ this.AuthService.currentUser()?.firstName! }}
+        {{ this.AuthService.currentUser()?.lastName! }}
+        ({{ this.AuthService.currentUser().roles[0]! }})
       </span>
-      }@else{
+      } }@else{
       <!-- Login Buttons -->
       <button mat-button routerLink="/login">Login</button>
       }
@@ -78,7 +75,6 @@ export class AppComponent {
     this.router.events.subscribe((val) => {
       // see also
       if (val instanceof NavigationEnd) {
-        console.log(val.url === '/login');
         this.isCurrectRouteLoginIn.set(val.url === '/login');
       }
     });
@@ -91,7 +87,8 @@ export class AppComponent {
       this.AuthService.currentUser.set(
         JSON.parse(this.local.getItem('user')) as ApplicationUser
       );
-      this.AuthService.validateRole(this.AuthService.currentUser().roles[0]);
+      if (this.AuthService.currentUser().roles[0])
+        this.AuthService.validateRole(this.AuthService.currentUser().roles[0]);
     }
   }
 }

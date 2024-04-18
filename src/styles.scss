@@ -122,7 +122,12 @@ mat-toolbar {
   &.justify-content-center {
     justify-content: center;
   }
-
+  &.justify-content-between {
+    justify-content: space-between;
+  }
+  &.justify-content-end {
+    justify-content: flex-end;
+  }
   &.align-items-center {
     align-items: center;
   }
@@ -160,4 +165,12 @@ mat-toolbar {
 }
 .w-100 {
   width: 100%;
+}
+
+.mat-mdc-icon-button {
+  transform: scale(0.7);
+}
+.mat-mdc-icon-button.mat-mdc-button-base {
+  padding: 9px !important;
+  width: 30px !important;
 }

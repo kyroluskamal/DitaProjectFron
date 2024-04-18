@@ -14,6 +14,8 @@ import {
   withInterceptors,
 } from '@angular/common/http';
 import { TokenResponseInterceptor } from '../interceptors/token.interceptor';
+import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
+import { MAT_DIALOG_DEFAULT_OPTIONS } from '@angular/material/dialog';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -24,5 +26,7 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([TokenResponseInterceptor])
     ),
+    { provide: MAT_RIPPLE_GLOBAL_OPTIONS, useValue: { disabled: true } },
+    { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: { width: '45vw' } },
   ],
 };

@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, forkJoin, tap } from 'rxjs';
+import { Observable, forkJoin, map, tap } from 'rxjs';
 import { NotificationsService } from './notifications.service';
 import { SuccessResponse } from '../Models/models';
 
@@ -51,7 +51,7 @@ export class GenericService<BodyType, ResponseType> {
       });
   }
 
-  public postObservable(url: string, body: BodyType, headers?: HttpHeaders) {
+  public postObservable<c>(url: string, body: BodyType, headers?: HttpHeaders) {
     return this.httpClient
       .post<SuccessResponse>(`${url}`, body, {
         headers: headers,
@@ -60,8 +60,9 @@ export class GenericService<BodyType, ResponseType> {
         tap((res) => {
           this.notifications.sucess(res.message, 'Close');
           this.postRes.set(res.data as ResponseType);
-          this.getAllRes.update((d) => [...d, res.data as ResponseType]);
-        })
+          // this.getAllRes.update((d) => [...d, res.data as ResponseType]);
+        }),
+        map((res) => res.data as ResponseType)
       );
   }
 
@@ -75,9 +76,18 @@ export class GenericService<BodyType, ResponseType> {
   }
 
   public putObservable(url: string, body: BodyType, headers?: HttpHeaders) {
-    return this.httpClient.put<ResponseType>(`${url}`, body, {
-      headers: headers,
-    });
+    return this.httpClient
+      .put<SuccessResponse>(`${url}`, body, {
+        headers: headers,
+      })
+      .pipe(
+        tap((res) => {
+          this.notifications.sucess(res.message, 'Close');
+          this.updateRes.set(res.data as ResponseType);
+        }),
+
+        map((res) => res.data as ResponseType)
+      );
   }
 
   public Delete(url: string, headers?: HttpHeaders) {

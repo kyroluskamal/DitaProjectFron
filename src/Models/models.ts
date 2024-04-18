@@ -12,7 +12,7 @@ export class DocVersion extends CommonModel {
   public document?: Documento;
   public ditaTopicVersions: DocVersionDitatopicVersion[] = [];
   public ditaTopics: DitaTopic[] = [];
-  public Roles: DocVersionsRoles[] = [];
+  public roles: DocVersionsRoles[] = [];
 }
 
 export class DocVersionsRoles {
@@ -22,7 +22,7 @@ export class DocVersionsRoles {
   public docVersion?: DocVersion;
   public ditaMapXml: string = '';
   public ditaMapFilePath: string = '';
-  public PDFfilePath: string = '';
+  public pdFfilePath: string = '';
 }
 export class IdentityRole {
   public id: number = 0;
@@ -107,11 +107,7 @@ export class DitaTopicModelView extends CommonModel {
 }
 
 export class DitaTopicUpdateViewModel {
-  constructor(
-    public title: string,
-    public documentId: number,
-    public type: number
-  ) {}
+  constructor(public title: string | null, public documentId: number | null) {}
 }
 
 export class DitaTopicVersionViewModel extends CommonModel {
@@ -140,7 +136,7 @@ export class DucumentModelView extends CommonModel {
 }
 
 export class DocumentUpdateViewModel {
-  constructor(public title: string) {}
+  public title: string | null = '';
 }
 
 export class StepViewModel extends CommonModel {
