@@ -9,13 +9,8 @@ import {
 } from '@angular/material/dialog';
 import {
   DitaTopic,
-  DitaTopicModelView,
   DitaTopicType,
   DitaTopicVersionViewModel,
-  DitaTopicVersionsRoles,
-  DitatopicVersion,
-  Documento,
-  IdentityRole,
   ModelFormGroup,
   Step,
   StepViewModel,
@@ -36,6 +31,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ROLE_SERVICE } from '../services/servicesTokens';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
+import { JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-add-dita-topic-version',
@@ -55,6 +51,7 @@ import { MatListModule } from '@angular/material/list';
     MatIconModule,
     MatDividerModule,
     MatListModule,
+    JsonPipe,
   ],
   template: `
     <h2 mat-dialog-title>
@@ -156,11 +153,7 @@ import { MatListModule } from '@angular/material/list';
     </div>
     <div mat-dialog-actions align="end">
       <button mat-raised-button mat-dialog-close color="warn">Cancel</button>
-      <button
-        mat-raised-button
-        [mat-dialog-close]="dtForm.value"
-        color="primary"
-      >
+      <button mat-raised-button (click)="sendData()" color="primary">
         Save
       </button>
     </div>
@@ -169,19 +162,19 @@ import { MatListModule } from '@angular/material/list';
 })
 export class DitaTopicVersionComponent implements OnInit {
   dialogData = inject(MAT_DIALOG_DATA);
-
+  dialogRef = inject(MatDialogRef<DitaTopicVersionComponent>);
   roleService = inject(ROLE_SERVICE);
   ditatTopic = signal<DitaTopic>(this.dialogData.dt);
   ditaTopicVersion = signal<DitaTopicVersionViewModel>(this.dialogData.dtv);
   dtForm: ModelFormGroup<DitaTopicVersionViewModel> = this.fb.nonNullable.group(
     {
       id: [0],
+      type: [-1, Validators.required],
       roles: this.fb.nonNullable.control<number[]>([], Validators.required),
       shortDescription: [''],
       steps: this.fb.nonNullable.array<ModelFormGroup<StepViewModel>>([]),
       body: ['', [Validators.required]],
       ditaTopicId: [this.ditatTopic().id],
-      type: [-1, Validators.required],
       versionNumber: ['', [Validators.required]],
     }
   );
@@ -237,5 +230,12 @@ export class DitaTopicVersionComponent implements OnInit {
     this.steps.controls.sort((a, b) => {
       return a.controls.order.value - b.controls.order.value;
     });
+  }
+  sendData() {
+    console.log(this.dtForm.controls.type.value);
+    this.dtForm.controls.type.enable();
+    if (this.dtForm.controls.type.value == DitaTopicType.Task)
+      this.dtForm.controls.body.setValue(' ');
+    this.dialogRef.close(this.dtForm.value);
   }
 }
