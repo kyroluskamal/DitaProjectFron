@@ -1,38 +1,27 @@
-import { Component, inject, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
-import { KTableComponent } from '../Generic components/k-table.component';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import {
+  KTButtonClickEvent,
+  KTButtons,
+  KTColumns,
+  KTableComponent,
+} from '../Generic components/k-table.component';
 import { GenericService } from '../services/generic.service';
 import { DocVersion, Documento } from '../Models/models';
 import { MatDialog } from '@angular/material/dialog';
-import { ShowDocVersionsDialogComponent } from '../dialogs/show-doc-versions-dialog.component';
 import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.component';
-import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatButtonModule } from '@angular/material/button';
 import { AddDocDialogComponent } from '../dialogs/add-doc-dialog.component';
 import { DocumentsApi } from '../Models/Api';
 import { DOCUMENTS_SERVICE } from '../services/servicesTokens';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../services/auth.service';
-import { MatSelectModule } from '@angular/material/select';
 import { DocVersionDialogComponent } from '../dialogs/doc-version-dialog.component';
-import { FormsModule } from '@angular/forms';
 import { EditDocDialogComponent } from '../dialogs/edit-doc-dialog.component';
-import { version } from 'os';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    KTableComponent,
-    MatButtonModule,
-    MatCardModule,
-    MatIconButton,
-    MatIconModule,
-    RouterLink,
-    MatSelectModule,
-    FormsModule,
-  ],
+  imports: [KTableComponent, MatButtonModule],
   providers: [GenericService<Documento, Documento>, MatDialog],
   template: `
     @if(this.AuthService.isloggedIn() && this.AuthService.isAdminOrAnalyst()) {
@@ -42,102 +31,141 @@ import { version } from 'os';
       </button>
     </div>
     }
-    <div class="card-container">
-      @for (doc of this.docsService.getAllRes(); track doc.id) {
-      <mat-card class="doc-card">
-        <mat-card-header class="d-flex flex-column">
-          <mat-card-title>{{ doc.title }}</mat-card-title>
-          <div class="d-flex justify-content-end">
-            <button
-              mat-button
-              color="primary"
-              [routerLink]="[doc.id]"
-              [state]="{ data: { doc: doc } }"
-            >
-              Open repo
-            </button>
-            <button mat-icon-button color="primary" (click)="editDoc(doc)">
-              <mat-icon fontIcon="edit"></mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="deleteDoc(doc)">
-              <mat-icon fontIcon="delete"></mat-icon>
-            </button>
-          </div>
-        </mat-card-header>
-        <mat-card-content style="margin-top: 7%;margin-bottom: 7%;">
-          <mat-select
-            [(ngModel)]="selectedVersions[doc.id]"
-            #selectVersion
-            placeholder="Select Version"
-            (selectionChange)="saveSelectedVersion(doc.id, $event.value)"
-          >
-            @for(version of doc.docVersions; track version.id){
-            <mat-option [value]="version">
-              {{ version.versionNumber }}
-            </mat-option>
-            }
-          </mat-select>
-        </mat-card-content>
-        <mat-card-actions align="end">
-          @if(isSelectedVersion(doc.id)){ @if (this.pdfSrcForRole() === '') {
-          <button
-            mat-button
-            color="primary"
-            [disabled]="doc.ditaTopics.length == 0"
-          >
-            Generate PDF
-          </button>
-          } @else{
-
-          <button mat-icon-button color="primary">
-            <mat-icon fontIcon="picture_as_pdf"></mat-icon>
-          </button>
-          } } @if (this.AuthService.isAdminOrAnalyst() &&
-          isSelectedVersion(doc.id)) {
-
-          <button mat-icon-button color="warn" (click)="DeleteVersion(doc.id)">
-            <mat-icon fontIcon="delete"></mat-icon>
-          </button>
-          <button mat-icon-button color="primary" (click)="addEditVersion(doc)">
-            <mat-icon fontIcon="add_circle"></mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            color="primary"
-            (click)="addEditVersion(doc, 'edit')"
-          >
-            <mat-icon fontIcon="edit"></mat-icon>
-          </button>
-          }
-        </mat-card-actions>
-      </mat-card>
-      }
-    </div>
+    <k-table
+      [columns]="DocColumns"
+      [dataSource]="this.docsService.getAllRes()"
+      [trackByProperty]="'id'"
+      [Buttons]="docButtons"
+      (OnRowClick)="
+        selectedDoc.set($event); _selectedVersions.set($event.docVersions)
+      "
+      (OnButtonClick)="OnDocTableButtonClick($event)"
+    />
+    <k-table
+      [columns]="DocVersionColumns"
+      [dataSource]="_selectedVersions()"
+      [trackByProperty]="'id'"
+      [Buttons]="Buttons"
+      (OnRowClick)="saveSelectedVersion(selectedDoc().id, $event)"
+      (OnButtonClick)="OnDocVersionTableButtonClick($event)"
+    />
   `,
   host: { class: 'margin-block d-block' },
   styles: [],
 })
-export class DocumentsComponent {
+export class DocumentsComponent implements OnInit {
   title = 'DitaTopic';
   docsService = inject(DOCUMENTS_SERVICE);
   AuthService = inject(AuthService);
+  router = inject(Router);
   dialog = inject(MatDialog);
-
+  DocColumns: KTColumns[] = [
+    {
+      property: 'id',
+      displayText: 'Id',
+      dataType: 'n',
+    },
+    { property: 'title', displayText: 'Title', dataType: 's' },
+    {
+      property: 'docVersions',
+      displayText: 'No. of Versions',
+      dataType: 'counted',
+    },
+    {
+      property: 'ditaTopics',
+      displayText: 'No. of DitaTopics',
+      dataType: 'counted',
+    },
+  ];
+  DocVersionColumns: KTColumns[] = [
+    {
+      property: 'id',
+      displayText: 'Id',
+      dataType: 'n',
+    },
+    { property: 'versionNumber', displayText: 'No', dataType: 's' },
+    {
+      property: 'createdAt',
+      displayText: 'Created At',
+      dataType: 'd',
+    },
+  ];
+  selectedDoc = signal<Documento>({} as Documento);
+  _selectedVersions = signal<DocVersion[]>([]);
+  Buttons: KTButtons[] = [];
+  docButtons: KTButtons[] = [];
   selectedVersions: { [docId: number]: DocVersion } = {};
-
-  isSelectedVersion(docId: number): boolean {
-    return this.selectedVersions.hasOwnProperty(docId);
+  OnDocTableButtonClick(event: KTButtonClickEvent<Documento>) {
+    switch (event.actionName) {
+      case 'view':
+        this.router.navigate(['documents', event.element.id]);
+        break;
+      case 'edit':
+        this.editDoc(event.element);
+        break;
+      case 'del':
+        this.deleteDoc(event.element);
+        break;
+      case 'addVersions':
+        this.addEditVersion(event.element, 'add');
+        break;
+    }
   }
+  OnDocVersionTableButtonClick(event: KTButtonClickEvent<DocVersion>) {
+    this.saveSelectedVersion(this.selectedDoc().id, event.element);
+    switch (event.actionName) {
+      case 'view':
+        this.pdfSrcForRole.set(
+          event.element.roles.filter(
+            (DocVersionRole) =>
+              DocVersionRole.role?.name ===
+              this.AuthService.currentUser().roles[0]
+          )[0].pdFfilePath
+        );
+        break;
+      case 'edit':
+        this.addEditVersion(this.selectedDoc(), 'edit');
+        break;
+      case 'del':
+        this.DeleteVersion(this.selectedDoc().id);
+        break;
+    }
+  }
+  // isSelectedVersion(docId: number): boolean {
+  //   return this.selectedVersions.hasOwnProperty(docId);
+  // }
   pdfSrcForRole = signal('');
   ngOnInit() {
     this.docsService.getAllSubsciption(DocumentsApi.getAll());
-  }
 
-  openDialog(documento: Documento): void {
-    this.dialog.open(ShowDocVersionsDialogComponent, {
-      width: '40vw',
-      data: documento,
-    });
+    if (this.AuthService.isAdminOrAnalyst()) {
+      this.Buttons = [];
+      this.Buttons.push({
+        name: 'veiw',
+        actionName: 'view',
+        color: 'primary',
+        icon: 'open_in_new',
+      });
+      this.Buttons.push({
+        name: 'edit',
+        actionName: 'edit',
+        color: 'primary',
+        icon: 'edit',
+      });
+      this.Buttons.push({
+        name: 'delete',
+        actionName: 'del',
+        color: 'warn',
+        icon: 'delete',
+      });
+      this.docButtons = [...this.Buttons];
+      this.docButtons.unshift({
+        color: 'primary',
+        actionName: 'addVersions',
+        name: 'addVersion',
+        icon: 'add_circle',
+      });
+    }
   }
 
   deleteDoc(documento: Documento) {
@@ -164,7 +192,6 @@ export class DocumentsComponent {
     });
   }
   saveSelectedVersion(docId: number, version: DocVersion) {
-    console.log(version);
     this.selectedVersions[docId] = version;
     if (this.selectedVersions[docId]) {
       this.pdfSrcForRole.set(
@@ -189,9 +216,19 @@ export class DocumentsComponent {
           .subscribe(() => {
             this.removeDocVersion(docId);
             let docs = this.docsService.getAllRes();
+            docs
+              .find((doc) => doc.id === docId)
+              ?.docVersions.filter(
+                (version) => version.id !== this.selectedVersions[docId].id
+              );
             this.docsService.getAllRes.update(() => {
-              delete this.selectedVersions[docId];
               return docs;
+            });
+            this.selectedDoc.update((doc) => {
+              doc.docVersions = doc.docVersions.filter(
+                (version) => version.id !== this.selectedVersions[docId].id
+              );
+              return doc;
             });
           });
       }
@@ -232,13 +269,11 @@ export class DocumentsComponent {
     const dialogRed = this.dialog.open(EditDocDialogComponent, {
       data: { doc: doc },
     });
-
     dialogRed.afterClosed().subscribe((result) => {
       if (result) {
         this.docsService
           .putObservable(DocumentsApi.update(doc.id), result)
           .subscribe((res) => {
-            console.log(res);
             this.docsService.getAllSubsciption(DocumentsApi.getAll());
           });
       }
@@ -246,37 +281,38 @@ export class DocumentsComponent {
   }
 
   private AddDocVeriosn(docId: number, response: any) {
-    this.docsService
-      .getAllRes()
-      .find((d) => d.id === docId)
-      ?.docVersions.push(response as DocVersion);
     this.docsService.getAllRes.update((docs) => {
-      docs.find((doc) => doc.id === docId)?.docVersions.push(response);
+      let doc = docs.find((doc) => doc.id === docId);
+      doc?.docVersions.push(response);
+      this._selectedVersions.set([...(doc?.docVersions as DocVersion[])]);
+      this.selectedDoc.set(doc!);
       return docs;
     });
   }
 
   private UpdateDocVersion(docId: number, response: any) {
-    let doc = this.docsService.getAllRes().find((doc) => doc.id === docId);
-    let index = doc?.docVersions?.findIndex(
-      (version) => version.id === this.selectedVersions[docId].id
-    );
     this.docsService.getAllRes.update((docs) => {
-      docs
+      let i = docs
         .find((doc) => doc.id === docId)
-        ?.docVersions.splice(index!, 1, response);
+        ?.docVersions.findIndex(
+          (version) => version.id === this.selectedVersions[docId].id
+        );
+      let doc = docs.find((doc) => doc.id === docId);
+      doc?.docVersions.splice(i!, 1, response as DocVersion);
+      this._selectedVersions.set([...(doc?.docVersions as DocVersion[])]);
       return docs;
     });
     this.selectedVersions[docId] = response;
   }
   private removeDocVersion(docId: number) {
-    let doc = this.docsService.getAllRes().find((doc) => doc.id === docId);
-    let index = doc?.docVersions?.findIndex(
-      (version) => version.id === this.selectedVersions[docId].id
-    );
-    this.docsService
-      .getAllRes()
-      .find((doc) => doc.id === docId)
-      ?.docVersions.splice(index!, 1);
+    this.docsService.getAllRes.update((docs) => {
+      let doc = docs.find((doc) => doc.id === docId);
+      let i = doc?.docVersions.findIndex(
+        (version) => version.id === this.selectedVersions[docId].id
+      );
+      doc?.docVersions.splice(i!, 1);
+      this._selectedVersions.set([...(doc?.docVersions as DocVersion[])]);
+      return docs;
+    });
   }
 }

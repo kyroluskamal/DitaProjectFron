@@ -9,7 +9,6 @@ import {
 import {
   DitaTopic,
   DitaTopicUpdateViewModel,
-  DocumentUpdateViewModel,
   Documento,
   ModelFormGroup,
 } from '../Models/models';
@@ -25,7 +24,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 
 @Component({
-  selector: 'app-doc-version-dialog',
+  selector: 'app-dita-version-dialog',
   standalone: true,
   imports: [
     MatFormFieldModule,

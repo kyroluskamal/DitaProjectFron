@@ -1,10 +1,22 @@
-import { Component, OnInit, inject, input } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { RouterLink, RouterOutlet } from '@angular/router';
-import { KTableComponent } from '../Generic components/k-table.component';
+import {
+  KTButtonClickEvent,
+  KTButtons,
+  KTColumns,
+  KTableComponent,
+} from '../Generic components/k-table.component';
 import {
   DITATOPIC_SERVICE,
   DOCUMENTS_SERVICE,
@@ -50,57 +62,22 @@ import { EditDitaTopicComponent } from '../dialogs/edit-dita-topic.component';
       </button>
     </div>
     }
-    <div class="card-container">
-      @for (dt of this.docService.getBy().ditaTopics; track dt.id) {
-      <mat-card class="doc-card">
-        <mat-card-header class="d-flex flex-column">
-          <mat-card-title>{{ dt.title }}</mat-card-title>
-          <div class="d-flex justify-content-end">
-            <button mat-icon-button color="primary" (click)="EditDitaTopic(dt)">
-              <mat-icon fontIcon="edit"></mat-icon>
-            </button>
-            <button mat-icon-button color="warn" (click)="DeleteDitaTopic(dt)">
-              <mat-icon fontIcon="delete"></mat-icon>
-            </button>
-          </div>
-        </mat-card-header>
-        <mat-card-content style="margin-top: 7%;margin-bottom: 7%;">
-          <mat-select
-            #selectedVersion
-            placeholder="Select Version"
-            (selectionChange)="onVersionSelected(dt.id, $event.value)"
-          >
-            @for(version of dt.ditatopicVersions; track version.id){
-            <mat-option [value]="version">
-              {{ version.versionNumber }}
-            </mat-option>
-            }
-          </mat-select>
-        </mat-card-content>
-        <mat-card-actions align="end">
-          @if(isSelectedVersion(dt.id)){
-          <button
-            mat-icon-button
-            color="primary"
-            (click)="DitaTopicVersion(dt, 'edit')"
-          >
-            <mat-icon fontIcon="edit"></mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="DeleteVersion(dt.id)">
-            <mat-icon fontIcon="delete"></mat-icon>
-          </button>
-          }
-          <button
-            mat-icon-button
-            color="primary"
-            (click)="DitaTopicVersion(dt)"
-          >
-            <mat-icon fontIcon="add_circle"></mat-icon>
-          </button>
-        </mat-card-actions>
-      </mat-card>
-      }
-    </div>
+    <k-table
+      [columns]="ditaTopicColumns"
+      [dataSource]="this.docService.getBy().ditaTopics"
+      [trackByProperty]="'id'"
+      [Buttons]="dtBtns"
+      (OnRowClick)="selectedDitaTopic.set($event)"
+      (OnButtonClick)="onDitatopicButtonsClick($event)"
+    />
+    <k-table
+      [columns]="dtVersionsColumns"
+      [dataSource]="this.selectedDitaTopic().ditatopicVersions"
+      [trackByProperty]="'id'"
+      [Buttons]="Buttons"
+      (OnRowClick)="onVersionSelected(this.selectedDitaTopic().id, $event)"
+      (OnButtonClick)="onDitatopic_Versions_ButtonsClick($event)"
+    />
   `,
   host: { class: 'margin-block d-block' },
   styles: ``,
@@ -111,11 +88,88 @@ export class DocumentEditComponent implements OnInit {
   roleService = inject(ROLE_SERVICE);
   AuthService = inject(AuthService);
   docId = input.required<number>();
+  selectedDitaTopic = signal<DitaTopic>(new DitaTopic());
+  docById = signal<number>(0);
+  cdr = inject(ChangeDetectorRef);
+  ditaTopicColumns: KTColumns[] = [
+    { property: 'id', displayText: 'Id', dataType: 'n' },
+    { property: 'title', displayText: 'Title', dataType: 's' },
+    {
+      property: 'ditatopicVersions',
+      displayText: 'No of versions',
+      dataType: 'counted',
+    },
+  ];
+  dtVersionsColumns: KTColumns[] = [
+    { property: 'id', displayText: 'Id', dataType: 'n' },
+    { property: 'versionNumber', displayText: 'Version no.', dataType: 'n' },
+    { property: 'createdAt', displayText: 'Created at', dataType: 'd' },
+    {
+      property: 'type',
+      displayText: 'Type',
+      dataType: 'changeValue',
+      changeValue: { 0: 'Concept', 1: 'Task', 2: 'Reference' },
+    },
+    { property: 'shortDescription', displayText: 'Shor dsec', dataType: 's' },
+  ];
 
+  Buttons: KTButtons[] = [
+    {
+      name: 'edit',
+      actionName: 'edit',
+      color: 'primary',
+      icon: 'edit',
+    },
+    {
+      name: 'delete',
+      actionName: 'del',
+      color: 'warn',
+      icon: 'delete',
+    },
+  ];
+  dtBtns: KTButtons[] = [
+    {
+      name: 'addVersions',
+      actionName: 'addVersions',
+      color: 'primary',
+      icon: 'add_circle',
+    },
+    ...this.Buttons,
+  ];
   dialog = inject(MatDialog);
   selectedVersions: { [topicId: number]: DitatopicVersion } = {};
   onVersionSelected(topicId: number, version: DitatopicVersion) {
     this.selectedVersions[topicId] = version;
+  }
+  onDitatopicButtonsClick(event: KTButtonClickEvent<DitaTopic>) {
+    switch (event.actionName) {
+      case 'edit':
+        this.EditDitaTopic(event.element);
+        break;
+      case 'del':
+        this.DeleteDitaTopic(event.element);
+        break;
+
+      case 'addVersions':
+        this.DitaTopicVersion(event.element);
+        break;
+    }
+  }
+  onDitatopic_Versions_ButtonsClick(
+    event: KTButtonClickEvent<DitatopicVersion>
+  ) {
+    this.onVersionSelected(this.selectedDitaTopic().id, event.element);
+    switch (event.actionName) {
+      case 'view':
+        // this.DitaTopicVersion(event.row as DitaTopic, 'edit');
+        break;
+      case 'edit':
+        this.DitaTopicVersion(this.selectedDitaTopic(), 'edit');
+        break;
+      case 'del':
+        this.DeleteVersion(this.selectedDitaTopic().id);
+        break;
+    }
   }
   isSelectedVersion(topicId: number): boolean {
     return this.selectedVersions.hasOwnProperty(topicId);
@@ -129,7 +183,6 @@ export class DocumentEditComponent implements OnInit {
   AddDitaTopic() {
     const dialogRef = this.dialog.open(DitaTopicDialogComponent, {
       data: { doc: this.docService.getBy() },
-      width: '45vw',
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
@@ -137,7 +190,7 @@ export class DocumentEditComponent implements OnInit {
           .postObservable(DitaTopicsApi.create(), result)
           .subscribe((res) => {
             this.docService.getBy.update((d) => {
-              d.ditaTopics.push(res as DitaTopic);
+              d.ditaTopics = d.ditaTopics.concat(res as DitaTopic);
               return d;
             });
           });
@@ -146,9 +199,7 @@ export class DocumentEditComponent implements OnInit {
   }
 
   DeleteDitaTopic(dt: DitaTopic) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '250px',
-    });
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {});
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.ditaTopicService.Delete(DitaTopicsApi.delete(dt.id));
@@ -161,6 +212,7 @@ export class DocumentEditComponent implements OnInit {
   }
 
   DitaTopicVersion(dt: DitaTopic, action: 'edit' | 'add' = 'add') {
+    this.selectedDitaTopic.set(dt);
     const dialogRef = this.dialog.open(DitaTopicVersionComponent, {
       data: { action: action, dt: dt, dtv: this.selectedVersions[dt.id] },
       width: '45vw',
@@ -168,40 +220,17 @@ export class DocumentEditComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result: DitaTopicVersionViewModel) => {
       if (result) {
         if (result.type === 1) result.body = ' ';
-        console.log(result);
         if (action === 'add') {
           this.ditaTopicService
             .postObservable(DitaTopicsApi.createVersion(), result)
             .subscribe((res) => {
-              this.docService.getBy.update((d) => {
-                d.ditaTopics
-                  .find((d) => d.id === dt.id)
-                  ?.ditatopicVersions.push(res as DitatopicVersion);
-                return d;
-              });
+              this.updateTopicVersions(res as DitatopicVersion);
             });
         } else {
           this.ditaTopicService
             .putObservable(DitaTopicsApi.updateVersion(result.id), result)
             .subscribe((res) => {
-              console.log(res);
-              this.docService.getBy.update((d) => {
-                let dt = d.ditaTopics.find(
-                  (d) => d.id === (res as DitatopicVersion).ditaTopicId
-                );
-
-                let index = dt?.ditatopicVersions.findIndex(
-                  (v) => v.id === (res as DitatopicVersion).id
-                );
-
-                dt?.ditatopicVersions.splice(
-                  index!,
-                  1,
-                  res as DitatopicVersion
-                );
-                this.onVersionSelected(dt!.id, res as DitatopicVersion);
-                return d;
-              });
+              this.updateTopicVersions(res as DitatopicVersion);
             });
         }
       }
@@ -221,13 +250,13 @@ export class DocumentEditComponent implements OnInit {
           .subscribe({
             next: (res) => {
               this.docService.getBy.update((d) => {
-                d.ditaTopics.forEach((d) => {
-                  if (d.id === ditatopicId) {
-                    d.ditatopicVersions = d.ditatopicVersions.filter(
-                      (v) => v.id !== this.selectedVersions[ditatopicId].id
-                    );
-                  }
-                });
+                const topic = d.ditaTopics.find((d) => d.id === ditatopicId);
+                const dtVersions = topic?.ditatopicVersions.filter(
+                  (v) => v.id !== this.selectedVersions[ditatopicId].id
+                );
+                if (topic) {
+                  topic.ditatopicVersions = [...dtVersions!];
+                }
                 delete this.selectedVersions[ditatopicId];
                 return d;
               });
@@ -249,13 +278,36 @@ export class DocumentEditComponent implements OnInit {
         this.ditaTopicService
           .putObservable(DitaTopicsApi.update(dt.id), result)
           .subscribe((res) => {
+            let index = this.docService
+              .getBy()
+              .ditaTopics.findIndex((d) => d.id === dt.id);
+
             this.docService.getBy.update((d) => {
-              let index = d.ditaTopics.findIndex((d) => d.id === dt.id);
-              d.ditaTopics.splice(index, 1, res as DitaTopic);
+              let dita = [...d.ditaTopics];
+              dita.splice(index, 1, res as DitaTopic);
+              d.ditaTopics = dita;
               return d;
             });
           });
+        this.cdr.detectChanges();
       }
+    });
+  }
+
+  private updateTopicVersions(dtVersion: DitatopicVersion) {
+    this.docService.getBy.update((d) => {
+      const dt = d.ditaTopics.find((d) => d.id === this.selectedDitaTopic().id);
+      if (dt) {
+        const dtVersions = [...dt.ditatopicVersions];
+        dtVersions.splice(
+          dt.ditatopicVersions.findIndex((v) => v.id == dtVersion.id),
+          1,
+          dtVersion
+        );
+        dt.ditatopicVersions = [...dtVersions];
+      }
+      this.onVersionSelected(this.selectedDitaTopic().id, dtVersion);
+      return d;
     });
   }
 }

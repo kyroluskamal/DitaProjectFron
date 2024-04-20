@@ -37,7 +37,7 @@ export class Documento extends CommonModel {
   public docVersions: DocVersion[] = [];
 }
 
-export abstract class DitaTopic extends CommonModel {
+export class DitaTopic extends CommonModel {
   public title: string = '';
   public createdAt: Date = new Date();
   public documentId: number = 0;

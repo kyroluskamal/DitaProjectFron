@@ -8,7 +8,6 @@ import {
 } from '@angular/material/dialog';
 import { DocVersion, Documento } from '../Models/models';
 import { MatSelectModule } from '@angular/material/select';
-import { environment } from '../environments/environment.development';
 import { MatButtonModule } from '@angular/material/button';
 
 @Component({

@@ -1,25 +1,89 @@
-import { Component, computed, input, output, signal } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
+import { DatePipe } from '@angular/common';
+import { Component, computed, input, output } from '@angular/core';
+import { MatButtonModule, MatIconButton } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-
+export type KTColumns = {
+  property: string;
+  displayText: string;
+  dataType?: 'd' | 'n' | 's' | 'b' | 'counted' | 'changeValue';
+  changeValue?: { [key: string]: string };
+};
+export type KTButtons = {
+  name: string;
+  icon?: string;
+  color: 'warn' | 'primary';
+  actionName: string;
+};
+export type KTButtonClickEvent<T> = {
+  element: T;
+  actionName: string;
+};
 @Component({
   selector: 'k-table',
   standalone: true,
-  imports: [MatTableModule, MatButtonModule],
+  imports: [
+    MatTableModule,
+    MatButtonModule,
+    DatePipe,
+    MatIconButton,
+    MatIconModule,
+  ],
   template: `
     <table mat-table [dataSource]="dataSource()" class="mat-elevation-z8">
       @for (col of columns(); track col) {
       <ng-container [matColumnDef]="col.property">
         <th mat-header-cell *matHeaderCellDef>{{ col.displayText }}</th>
-        <td mat-cell *matCellDef="let element">{{ element[col.property] }}</td>
+        <td
+          mat-cell
+          *matCellDef="let element"
+          (click)="OnRowClick.emit(element)"
+        >
+          @switch (col.dataType) {
+          <!-- date -->
+          @case ('d') {
+          {{ element[col.property] | date }}
+          }
+          <!-- counted -->
+          @case ('counted') {
+          {{ element[col.property].length }}
+          }
+          <!-- chanveValue -->
+          @case('changeValue'){
+
+          {{ col?.changeValue?.[element[col.property]] }}
+          }
+          <!-- date -->
+          @default {
+          {{ element[col.property] }}
+          }
+          <!-- date -->
+
+          }
+        </td>
       </ng-container>
-      }@for (b of buttons(); track b) {
-      <ng-container [matColumnDef]="'isUsing' + b">
+      }@for (b of Buttons(); track b) {
+      <ng-container [matColumnDef]="b.name">
+        <!-- <pre>{{ Buttons() | json }}</pre> -->
         <th mat-header-cell *matHeaderCellDef></th>
         <td mat-cell *matCellDef="let element">
-          <button mat-button (click)="OnClick(element, b)" color="primary">
-            {{ b.charAt(0).toUpperCase() + b.slice(1) }}
+          @if(b.icon != undefined){
+          <button
+            mat-icon-button
+            (click)="OnClick(element, b.actionName)"
+            [color]="b.color"
+          >
+            <mat-icon [fontIcon]="b.icon"></mat-icon>
           </button>
+          } @else {
+          <button
+            mat-button
+            (click)="OnClick(element, b.actionName)"
+            color="primary"
+          >
+            {{ b.name.charAt(0).toUpperCase() + b.name.slice(1) }}
+          </button>
+          }
         </td>
       </ng-container>
       }
@@ -27,44 +91,42 @@ import { MatTableModule } from '@angular/material/table';
       <tr mat-row *matRowDef="let row; columns: cols()"></tr>
     </table>
   `,
-  styles: [],
+  styles: [
+    `
+      :host {
+        margin-bottom: 20px;
+        display: block;
+      }
+    `,
+  ],
 })
-export class KTableComponent {
-  columns = input.required<{ property: string; displayText: string }[]>();
-  dataSource = input.required<any[]>();
+export class KTableComponent<T> {
+  columns = input.required<KTColumns[]>();
+  dataSource = input.required<T[]>();
   trackByProperty = input.required<string>();
-  cols = computed(() => this.columns().map((col) => col.property));
-  Buttons = input<{ Delete?: boolean; edit?: boolean; view?: boolean }>({
-    Delete: false,
-    edit: false,
-    view: false,
+  Buttons = input<KTButtons[]>([]);
+
+  OnButtonClick = output<KTButtonClickEvent<T>>();
+
+  cols = computed(() => {
+    let columns = this.columns().map((col) => col.property);
+
+    let buttonCols = this.Buttons().map((btn) => btn.name);
+
+    return columns.concat(buttonCols);
   });
 
-  OnEditClick = output<any>();
-  OnViewClick = output<any>();
-  OnDeleteClick = output<any>();
-
-  buttons = computed(() => {
-    let btns = Object.keys(this.Buttons()).filter(
-      (key) =>
-        this.Buttons()[key as keyof ReturnType<typeof this.Buttons>] === true
-    );
-
-    this.cols = signal([...this.cols(), ...btns.map((b) => 'isUsing' + b)]);
-    return btns;
+  _columns = computed(() => {
+    let buttonCols = this.Buttons().map((btn) => ({
+      property: 'isUsing' + btn.name,
+      displayText: '',
+    }));
+    return this.columns().concat(buttonCols);
   });
 
-  OnClick(element: any, button: string) {
-    switch (button) {
-      case 'edit':
-        this.OnEditClick.emit(element);
-        break;
-      case 'view':
-        this.OnViewClick.emit(element);
-        break;
-      case 'Delete':
-        this.OnDeleteClick.emit(element);
-        break;
-    }
+  OnRowClick = output<T>();
+
+  OnClick(element: T, actionName: string) {
+    this.OnButtonClick.emit({ element, actionName });
   }
 }
