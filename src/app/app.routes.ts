@@ -1,7 +1,5 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './login.component';
-import { DocumentsComponent } from './documents.component';
-import { RegisterComponent } from './register.component';
 import { authGuard } from '../gurad/auth.guard';
 
 export const routes: Routes = [
@@ -22,6 +20,14 @@ export const routes: Routes = [
   },
   {
     path: 'documents/:docId',
+    loadComponent() {
+      return import('./document-edit.component').then(
+        (m) => m.DocumentEditComponent
+      );
+    },
+  },
+  {
+    path: 'documents/:docId/versions/:versionId',
     loadComponent() {
       return import('./document-edit.component').then(
         (m) => m.DocumentEditComponent

@@ -63,7 +63,8 @@ export class AuthService {
     this.local.removeItem('token');
     this.local.removeItem('user');
     this.isloggedIn.set(false);
-    this.router.navigate(['']);
+    this.isAdminOrAnalyst.set(false);
+    this.router.navigate(['/login']);
   }
 
   getToken() {

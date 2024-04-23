@@ -11,6 +11,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
+import { TitleCasePipe } from '@angular/common';
 @Component({
   selector: 'app-doc-version-dialog',
   standalone: true,
@@ -23,10 +24,11 @@ import { MatInputModule } from '@angular/material/input';
     MatButtonModule,
     MatDialogClose,
     MatInputModule,
+    TitleCasePipe,
   ],
   template: `
     <h2 mat-dialog-title>
-      {{ this.action() }} version for
+      {{ this.action() | titlecase }} version for
       {{ this.doc().title }}
     </h2>
     <div mat-dialog-content>
@@ -62,7 +64,6 @@ export class DocVersionDialogComponent implements OnInit {
     this.version.set(this.dialogData.version);
   }
   ngOnInit(): void {
-    console.log(this.version());
     if (this.action() === 'edit') {
       this.formGroup.patchValue(this.version());
     }

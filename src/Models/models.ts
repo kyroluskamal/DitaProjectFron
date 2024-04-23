@@ -10,7 +10,7 @@ export class DocVersion extends CommonModel {
 
   public documentId: number = 0;
   public document?: Documento;
-  public ditaTopicVersions: DocVersionDitatopicVersion[] = [];
+  public ditatopicVersions: DocVersionDitatopicVersion[] = [];
   public ditaTopics: DitaTopic[] = [];
   public roles: DocVersionsRoles[] = [];
 }

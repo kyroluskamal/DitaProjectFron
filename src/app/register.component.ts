@@ -127,7 +127,6 @@ export class RegisterComponent {
   // Method to handle the registration form submission
   register() {
     if (this.registerForm.valid) {
-      console.log(this.registerForm.value);
       // Handle registration logic here, e.g., call a service
     }
   }

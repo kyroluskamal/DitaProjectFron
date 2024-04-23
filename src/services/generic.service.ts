@@ -25,7 +25,13 @@ export class GenericService<BodyType, ResponseType> {
       });
   }
   public getAllObservable(url: string, headers?: HttpHeaders) {
-    return this.httpClient.get<ResponseType[]>(`${url}`, { headers: headers });
+    return this.httpClient
+      .get<ResponseType[]>(`${url}`, { headers: headers })
+      .pipe(
+        tap((data) => {
+          this.getAllRes.set(data);
+        })
+      );
   }
   //getBy
   public getBySubsciption(url: string, headers?: HttpHeaders) {
@@ -37,7 +43,14 @@ export class GenericService<BodyType, ResponseType> {
   }
 
   public getByObservable(url: string, headers?: HttpHeaders): Observable<any> {
-    return this.httpClient.get<ResponseType>(`${url}`, { headers: headers });
+    return this.httpClient
+      .get<ResponseType>(`${url}`, { headers: headers })
+      .pipe(
+        tap((data) => {
+          this.getBy.set(data);
+        }),
+        map((data) => data)
+      );
   }
 
   public postSubsciption(url: string, body: BodyType, headers?: HttpHeaders) {
@@ -45,7 +58,7 @@ export class GenericService<BodyType, ResponseType> {
       .post<SuccessResponse>(`${url}`, body, { headers: headers })
       .subscribe((res) => {
         this.notifications.sucess(res.message, 'Close');
-        console.log(res.data);
+
         this.postRes.set(res.data as ResponseType);
         this.getAllRes.update((d) => [...d, res.data as ResponseType]);
       });

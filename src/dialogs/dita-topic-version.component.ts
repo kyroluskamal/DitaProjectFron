@@ -232,7 +232,6 @@ export class DitaTopicVersionComponent implements OnInit {
     });
   }
   sendData() {
-    console.log(this.dtForm.controls.type.value);
     this.dtForm.controls.type.enable();
     if (this.dtForm.controls.type.value == DitaTopicType.Task)
       this.dtForm.controls.body.setValue(' ');

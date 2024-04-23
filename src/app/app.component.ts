@@ -13,6 +13,8 @@ import { GenericService } from '../services/generic.service';
 import { AuthService } from '../services/auth.service';
 import { LocalStorageService } from '../services/local-storage.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { LoaderComponent } from '../Generic components/loader.component';
+import { CommonSignalsService } from '../services/common-signals.service';
 
 @Component({
   selector: 'app-root',
@@ -23,30 +25,42 @@ import { MatToolbarModule } from '@angular/material/toolbar';
     MatButtonModule,
     MatToolbarModule,
     RouterLink,
+    LoaderComponent,
   ],
   providers: [GenericService<Documento, Documento>, MatDialog],
   template: `
     @if (!isCurrectRouteLoginIn()) {
-    <mat-toolbar color="primary">
+    <mat-toolbar
+      color="primary"
+      class="d-flex flex-row justify-content-between"
+    >
       <!-- Application Name -->
-      <span class="app-name">My Application</span>
+
+      <span class="app-name cursor-pointer" routerLink="/documents"
+        >Dita documentos</span
+      >
 
       <!-- Spacer to push the rest to the right -->
-
-      <span class="toolbar-spacer"></span>
-
-      @if (AuthService.isloggedIn()) {
-      <!-- Username and Role -->
-      @if (AuthService.currentUser() !== null) {
-      <span class="user-info">
-        {{ this.AuthService.currentUser()?.firstName! }}
-        {{ this.AuthService.currentUser()?.lastName! }}
-        ({{ this.AuthService.currentUser().roles[0]! }})
-      </span>
-      } }@else{
-      <!-- Login Buttons -->
-      <button mat-button routerLink="/login">Login</button>
-      }
+      <nav
+        class="spacer flex-grow-1 d-flex flex-row justify-content-start margin-x"
+      >
+        <a mat-button routerLink="/documents">Documentos</a>
+      </nav>
+      <div>
+        @if (AuthService.isloggedIn()) {
+        <!-- Username and Role -->
+        @if (AuthService.currentUser() !== null) {
+        <span class="user-info">
+          {{ this.AuthService.currentUser().firstName! }}
+          {{ this.AuthService.currentUser().lastName! }}
+          ({{ this.AuthService.currentUser().roles[0]! }})
+        </span>
+        <button mat-button (click)="this.AuthService.logout()">Loggout</button>
+        } }@else{
+        <!-- Login Buttons -->
+        <button mat-button routerLink="/login">Login</button>
+        }
+      </div>
     </mat-toolbar>
     } @if (!isCurrectRouteLoginIn()) {
 
@@ -57,6 +71,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 
     <router-outlet></router-outlet>
     }
+    <loader [isLoading]="CommponService.loaderLoading()"></loader>
   `,
   styles: [
     `
@@ -70,6 +85,7 @@ export class AppComponent {
   title = 'DitaTopic';
   local = inject(LocalStorageService);
   AuthService = inject(AuthService);
+  CommponService = inject(CommonSignalsService);
   isCurrectRouteLoginIn = signal(false);
   constructor(private router: Router) {
     this.router.events.subscribe((val) => {

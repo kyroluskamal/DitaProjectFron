@@ -12,13 +12,7 @@ import {
   Documento,
   ModelFormGroup,
 } from '../Models/models';
-import {
-  FormBuilder,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-import { MatSelectModule } from '@angular/material/select';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
@@ -32,9 +26,7 @@ import { MatInputModule } from '@angular/material/input';
     MatDialogActions,
     MatDialogTitle,
     MatDialogContent,
-    MatSelectModule,
     MatButtonModule,
-    FormsModule,
     MatDialogClose,
     MatInputModule,
   ],
@@ -71,7 +63,6 @@ export class EditDitaTopicComponent {
   doc = signal<Documento>({} as Documento);
   dt = signal<DitaTopic>({} as DitaTopic);
   constructor() {
-    console.log(this.dialogData.dt);
     this.doc.set(this.dialogData.doc);
     this.dt.set(this.dialogData.dt);
   }

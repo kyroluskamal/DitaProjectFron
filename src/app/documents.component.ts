@@ -17,6 +17,7 @@ import { AuthService } from '../services/auth.service';
 import { DocVersionDialogComponent } from '../dialogs/doc-version-dialog.component';
 import { EditDocDialogComponent } from '../dialogs/edit-doc-dialog.component';
 import { Router } from '@angular/router';
+import { environment } from '../environments/environment.development';
 
 @Component({
   selector: 'app-root',
@@ -45,7 +46,7 @@ import { Router } from '@angular/router';
       [columns]="DocVersionColumns"
       [dataSource]="_selectedVersions()"
       [trackByProperty]="'id'"
-      [Buttons]="Buttons"
+      [Buttons]="docVersionsButtons"
       (OnRowClick)="saveSelectedVersion(selectedDoc().id, $event)"
       (OnButtonClick)="OnDocVersionTableButtonClick($event)"
     />
@@ -92,8 +93,22 @@ export class DocumentsComponent implements OnInit {
   ];
   selectedDoc = signal<Documento>({} as Documento);
   _selectedVersions = signal<DocVersion[]>([]);
-  Buttons: KTButtons[] = [];
+  Buttons: KTButtons[] = [
+    {
+      name: 'edit',
+      actionName: 'edit',
+      color: 'primary',
+      icon: 'edit',
+    },
+    {
+      name: 'delete',
+      actionName: 'del',
+      color: 'warn',
+      icon: 'delete',
+    },
+  ];
   docButtons: KTButtons[] = [];
+  docVersionsButtons: KTButtons[] = [];
   selectedVersions: { [docId: number]: DocVersion } = {};
   OnDocTableButtonClick(event: KTButtonClickEvent<Documento>) {
     switch (event.actionName) {
@@ -114,14 +129,13 @@ export class DocumentsComponent implements OnInit {
   OnDocVersionTableButtonClick(event: KTButtonClickEvent<DocVersion>) {
     this.saveSelectedVersion(this.selectedDoc().id, event.element);
     switch (event.actionName) {
-      case 'view':
-        this.pdfSrcForRole.set(
-          event.element.roles.filter(
-            (DocVersionRole) =>
-              DocVersionRole.role?.name ===
-              this.AuthService.currentUser().roles[0]
-          )[0].pdFfilePath
-        );
+      case 'design':
+        this.router.navigate([
+          'documents',
+          this.selectedDoc().id,
+          'versions',
+          event.element.id,
+        ]);
         break;
       case 'edit':
         this.addEditVersion(this.selectedDoc(), 'edit');
@@ -129,43 +143,36 @@ export class DocumentsComponent implements OnInit {
       case 'del':
         this.DeleteVersion(this.selectedDoc().id);
         break;
+      case 'pdf':
+        window.open(
+          `${environment.apiDomain}/${
+            event.element.roles.filter(
+              (r) => r.role?.name === this.AuthService.currentUser().roles[0]
+            )[0].pdFfilePath
+          }`,
+          '_blank'
+        );
+        break;
     }
   }
-  // isSelectedVersion(docId: number): boolean {
-  //   return this.selectedVersions.hasOwnProperty(docId);
-  // }
-  pdfSrcForRole = signal('');
   ngOnInit() {
     this.docsService.getAllSubsciption(DocumentsApi.getAll());
 
     if (this.AuthService.isAdminOrAnalyst()) {
-      this.Buttons = [];
-      this.Buttons.push({
-        name: 'veiw',
-        actionName: 'view',
-        color: 'primary',
-        icon: 'open_in_new',
-      });
-      this.Buttons.push({
-        name: 'edit',
-        actionName: 'edit',
-        color: 'primary',
-        icon: 'edit',
-      });
-      this.Buttons.push({
-        name: 'delete',
-        actionName: 'del',
-        color: 'warn',
-        icon: 'delete',
-      });
-      this.docButtons = [...this.Buttons];
-      this.docButtons.unshift({
-        color: 'primary',
-        actionName: 'addVersions',
-        name: 'addVersion',
-        icon: 'add_circle',
-      });
+      this.setDocButtons();
+      this.setDocVersionsButtons();
     }
+    if (this.AuthService.isloggedIn())
+      this.docVersionsButtons.unshift({
+        name: 'pdf',
+        actionName: 'pdf',
+        color: 'primary',
+        icon: 'picture_as_pdf',
+        disabled: (ele: DocVersion) =>
+          ele?.roles.filter(
+            (r) => r.role?.name === this.AuthService.currentUser().roles[0]
+          )[0].pdFfilePath == '',
+      });
   }
 
   deleteDoc(documento: Documento) {
@@ -176,6 +183,7 @@ export class DocumentsComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.docsService.Delete(DocumentsApi.delete(documento.id));
+        this._selectedVersions.set([]);
       }
     });
   }
@@ -193,15 +201,6 @@ export class DocumentsComponent implements OnInit {
   }
   saveSelectedVersion(docId: number, version: DocVersion) {
     this.selectedVersions[docId] = version;
-    if (this.selectedVersions[docId]) {
-      this.pdfSrcForRole.set(
-        this.selectedVersions[docId].roles.filter(
-          (DocVersionRole) =>
-            DocVersionRole.role?.name ===
-            this.AuthService.currentUser().roles[0]
-        )[0].pdFfilePath
-      );
-    }
   }
 
   DeleteVersion(docId: number) {
@@ -313,6 +312,32 @@ export class DocumentsComponent implements OnInit {
       doc?.docVersions.splice(i!, 1);
       this._selectedVersions.set([...(doc?.docVersions as DocVersion[])]);
       return docs;
+    });
+  }
+  private setDocButtons() {
+    this.docButtons = [...this.Buttons];
+
+    this.docButtons.unshift({
+      name: 'veiw',
+      actionName: 'view',
+      color: 'primary',
+      icon: 'open_in_new',
+    });
+    this.docButtons.unshift({
+      color: 'primary',
+      actionName: 'addVersions',
+      name: 'addVersion',
+      icon: 'add_circle',
+    });
+  }
+
+  private setDocVersionsButtons() {
+    this.docVersionsButtons = [...this.Buttons];
+    this.docVersionsButtons.unshift({
+      name: 'design',
+      actionName: 'design',
+      color: 'primary',
+      icon: 'design_services',
     });
   }
 }

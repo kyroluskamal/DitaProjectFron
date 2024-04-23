@@ -41,7 +41,7 @@ export const DocumentsApi = {
     return `${this.baseUrl}/${docId}/versions`;
   },
 
-  postDitaTopicVersion(
+  AttachDitaTopicVersion(
     docId: number,
     docVersionId: number,
     ditaTopicVersionId: number
@@ -57,7 +57,7 @@ export const DocumentsApi = {
     return `${this.baseUrl}/${docId}/versions/${docVersionId}/ditaTopicVersions/${ditaTopicVersionId}`;
   },
 
-  createDitaTopicVersions(docId: number, docVersionId: number) {
+  AttachDitaTopic_Versions(docId: number, docVersionId: number) {
     return `${this.baseUrl}/${docId}/versions/${docVersionId}/ditaTopicVersions`;
   },
 
