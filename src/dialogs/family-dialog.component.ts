@@ -65,7 +65,7 @@ import {
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-raised-button color="warn" [matDialogClose]="true">
+      <button mat-raised-button color="warn" [matDialogClose]="false">
         Cancel
       </button>
       <button
@@ -75,7 +75,7 @@ import {
         [matDialogClose]="familyForm.value"
         cdkFocusInitial
       >
-        @if(data.family) { Add } @else { Save }
+        @if(data.family) { Save } @else { Add }
       </button>
     </mat-dialog-actions>
   `,

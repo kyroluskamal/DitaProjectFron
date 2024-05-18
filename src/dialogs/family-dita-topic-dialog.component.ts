@@ -94,7 +94,7 @@ import { DitaTopicsApi } from '../Models/Api';
 })
 export class FamilyDitaTopicDialogComponent implements OnInit {
   dialogData: { action: string; family: DocFamily } = inject(MAT_DIALOG_DATA);
-  family = signal<DocFamily>({} as DocFamily);
+  family = signal<DocFamily>(this.dialogData.family);
   ditaTopicService = inject(DITATOPIC_SERVICE);
 
   constructor(private fb: FormBuilder) {}
