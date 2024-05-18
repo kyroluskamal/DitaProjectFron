@@ -11,19 +11,24 @@ export const routes: Routes = [
     },
     canActivate: [authGuard],
   },
-
+  {
+    path: 'docfamilies',
+    loadComponent() {
+      return import('./family.component').then((m) => m.FamilyComponent);
+    },
+  },
+  {
+    path: 'docfamilies/:familyId/dts',
+    loadComponent() {
+      return import('./family-dita-topics.component').then(
+        (m) => m.FamilyDitaTopicsComponent
+      );
+    },
+  },
   {
     path: 'documents',
     loadComponent() {
       return import('./documents.component').then((m) => m.DocumentsComponent);
-    },
-  },
-  {
-    path: 'documents/:docId',
-    loadComponent() {
-      return import('./document-edit.component').then(
-        (m) => m.DocumentEditComponent
-      );
     },
   },
   {

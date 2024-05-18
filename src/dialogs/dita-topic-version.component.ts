@@ -11,6 +11,7 @@ import {
   DitaTopic,
   DitaTopicType,
   DitaTopicVersionViewModel,
+  DitatopicVersion,
   ModelFormGroup,
   Step,
   StepViewModel,
@@ -32,6 +33,7 @@ import { ROLE_SERVICE } from '../services/servicesTokens';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 import { JsonPipe } from '@angular/common';
+import { authApi } from '../Models/Api';
 
 @Component({
   selector: 'app-add-dita-topic-version',
@@ -161,7 +163,8 @@ import { JsonPipe } from '@angular/common';
   styles: ``,
 })
 export class DitaTopicVersionComponent implements OnInit {
-  dialogData = inject(MAT_DIALOG_DATA);
+  dialogData: { action: 'edit' | 'add' | 'view'; dt: DitaTopic; dtv: any } =
+    inject(MAT_DIALOG_DATA);
   dialogRef = inject(MatDialogRef<DitaTopicVersionComponent>);
   roleService = inject(ROLE_SERVICE);
   ditatTopic = signal<DitaTopic>(this.dialogData.dt);
@@ -181,11 +184,17 @@ export class DitaTopicVersionComponent implements OnInit {
   ditaTopicSeletectType = 0;
   constructor(private fb: FormBuilder) {}
   ngOnInit(): void {
+    this.roleService.getAllSubsciption(authApi.getRoles());
+    console.log(this.dialogData.dtv);
     if (this.dialogData.action == 'edit') {
       if (this.dialogData.dtv.steps)
         (this.dialogData.dtv.steps as Step[]).forEach((s) => this.addStep());
       this.dtForm.patchValue(this.dialogData.dtv);
       this.dtForm.controls.type.disable();
+    }
+    if (this.dialogData.action == 'view') {
+      this.dtForm.patchValue(this.dialogData.dtv);
+      this.dtForm.disable();
     }
   }
 

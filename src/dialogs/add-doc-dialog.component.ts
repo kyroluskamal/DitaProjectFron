@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
+  MAT_DIALOG_DATA,
   MatDialogActions,
   MatDialogClose,
   MatDialogContent,
@@ -20,12 +21,16 @@ import { MyErrorStateMatcher } from '../services/MyErrorStateMatcher';
 import { MatInputModule } from '@angular/material/input';
 import { LocalStorageService } from '../services/local-storage.service';
 import { AuthService } from '../services/auth.service';
+import { DocFamily } from '../Models/models';
+import { FAMILY_SERVICE } from '../services/servicesTokens';
+import { DocFamilyApi } from '../Models/Api';
 
 interface AddDocForm {
   title: FormControl<string | null>;
   versionNumber: FormControl<string | null>;
   authorId: FormControl<number | null>;
   id: FormControl<number | null>;
+  docFamilyId: FormControl<number | null>;
 }
 @Component({
   selector: 'app-add-doc-dialog',
@@ -58,10 +63,18 @@ interface AddDocForm {
             formControlName="versionNumber"
           />
         </mat-form-field>
+        <mat-form-field style="width: 100%;" appearance="outline">
+          <mat-label>Family</mat-label>
+          <mat-select formControlName="docFamilyId">
+            @for (family of familyService.getAllRes(); track family.id) {
+            <mat-option [value]="family.id">{{ family.title }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-raised-button color="warn" [matDialogClose]="true">
+      <button mat-raised-button color="warn" [matDialogClose]="false">
         Cancel
       </button>
       <button
@@ -80,12 +93,14 @@ interface AddDocForm {
 export class AddDocDialogComponent implements OnInit {
   documentForm: FormGroup | null = null;
   matcher = new MyErrorStateMatcher();
+  familyService = inject(FAMILY_SERVICE);
   constructor(
     private formBuilder: FormBuilder,
     private local: LocalStorageService,
     private authService: AuthService
   ) {}
   ngOnInit(): void {
+    this.familyService.getAllSubsciption(DocFamilyApi.getAll());
     this.documentForm = this.formBuilder.nonNullable.group<AddDocForm>({
       title: this.formBuilder.control<string | null>(null, Validators.required),
       versionNumber: this.formBuilder.control<string | null>(
@@ -96,6 +111,10 @@ export class AddDocDialogComponent implements OnInit {
         this.authService.currentUser().id
       ),
       id: this.formBuilder.control<number | null>(0),
+      docFamilyId: this.formBuilder.control<number | null>(
+        null,
+        Validators.required
+      ),
     });
   }
 }

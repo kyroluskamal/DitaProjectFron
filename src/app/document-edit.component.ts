@@ -22,12 +22,12 @@ import {
 import {
   DITATOPIC_SERVICE,
   DOCUMENTS_SERVICE,
+  FAMILY_SERVICE,
   ROLE_SERVICE,
 } from '../services/servicesTokens';
 import { AuthService } from '../services/auth.service';
 import { DitaTopicsApi, DocumentsApi, authApi } from '../Models/Api';
 import { MatDialog } from '@angular/material/dialog';
-import { DitaTopicDialogComponent } from '../dialogs/dita-topic-dialog.component';
 import {
   DitaTopic,
   DitaTopicVersionViewModel,
@@ -36,7 +36,6 @@ import {
 import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.component';
 import { JsonPipe } from '@angular/common';
 import { DitaTopicVersionComponent } from '../dialogs/dita-topic-version.component';
-import { EditDitaTopicComponent } from '../dialogs/edit-dita-topic.component';
 import { CommonSignalsService } from '../services/common-signals.service';
 @Component({
   selector: 'app-document-edit',
@@ -57,45 +56,26 @@ import { CommonSignalsService } from '../services/common-signals.service';
     <h1
       style="text-align:center; background-color: #cfcfcf; padding-top: 20px; padding-bottom:20px"
     >
-      Repo for: {{ this.docService.getBy().title }}
+      Document title: {{ this.docService.getBy().title }} - Version number:
+      {{ currentDocVersion()?.versionNumber }}
     </h1>
-    <!--  -->
-    @if(this.versionId()) {
-    <h2>
-      Dita topics and its version for Doc version:
-      {{ selectedDocVersion()?.versionNumber }}
-    </h2>
-    <div>
-      <ul>
-        @for (dt of this.selectedDocVersion()?.ditaTopics; track dt.id) {
-        <li>
-          {{ dt.title }}
-          <ul></ul>
-        </li>
-        }
-      </ul>
-    </div>
-    }
     <div class="btn-align-end">
       <button
+        [disabled]="!isDocValidByChosenAllRequiredDitaTopics()"
         mat-raised-button
         color="accent"
         (click)="AttachDtVersionsToDocVersion()"
       >
         Save
       </button>
-      <button mat-raised-button color="primary" (click)="AddDitaTopic()">
-        Add Dita Topic
-      </button>
     </div>
     }
     <k-table
       [columns]="ditaTopicColumns"
-      [dataSource]="this.docService.getBy().ditaTopics"
+      [dataSource]="this.docService.getBy().ditaTopics!"
       [trackByProperty]="'id'"
-      [Buttons]="dtBtns"
       (OnRowClick)="this.selectedDitaTopic.set($event)"
-      (OnButtonClick)="onDitatopicButtonsClick($event)"
+      [rowClassConditions]="evaluateRowClass"
     />
     <k-table
       [columns]="dtVersionsColumns"
@@ -103,7 +83,7 @@ import { CommonSignalsService } from '../services/common-signals.service';
       [trackByProperty]="'id'"
       [Buttons]="Buttons"
       [selected_Rows]="selected_dtVersionsForCurrentDocVersion()"
-      (onSelectedRows)="this.selectedDitaTopicVersions.set($event)"
+      (onSelectedRows)="CaptureChosenVersions($event)"
       (OnRowClick)="onVersionSelected(this.selectedDitaTopic().id, $event)"
       (OnButtonClick)="onDitatopic_Versions_ButtonsClick($event)"
     />
@@ -128,9 +108,12 @@ export class DocumentEditComponent implements OnInit {
           let selectedVersions = dtVersions
             ?.flat()
             ?.filter((dtv) => selectedDitaTopicVersions_ids?.includes(dtv.id));
-
           this.selectedDitaTopicVersions.set(selectedVersions);
           this.selected_dtVersionsForCurrentDocVersion.set(selectedVersions);
+          this.docService.getBy().ditaTopics?.forEach((dt) => {
+            dt.chosen = selectedVersions?.some((v) => v.ditaTopicId == dt.id);
+          });
+          this.updateStatusInTable();
         }
       },
       { allowSignalWrites: true }
@@ -138,18 +121,26 @@ export class DocumentEditComponent implements OnInit {
   }
   commonSignalService = inject(CommonSignalsService);
   ditaTopicService = inject(DITATOPIC_SERVICE);
+  familyService = inject(FAMILY_SERVICE);
   docService = inject(DOCUMENTS_SERVICE);
   roleService = inject(ROLE_SERVICE);
+  selectedVersion = signal<DitatopicVersion>({} as DitatopicVersion);
   AuthService = inject(AuthService);
   docId = input.required<number>();
   router = inject(Router);
   versionId = input<number>(0);
+  currentDocVersion = computed(() => {
+    return this.docService
+      .getBy()
+      ?.docVersions?.find((dv) => dv.id == this.versionId());
+  }); // this.docService.getBy().docVersions?.find((dv) => dv.id == this.versionId());
   selectedDitaTopicVersions = signal<DitatopicVersion[]>([]);
   selectedDitaTopic = signal<DitaTopic>(new DitaTopic());
   selected_dtVersionsForCurrentDocVersion = signal<DitatopicVersion[]>([]);
   totalSelectedDitaTopicVersions = signal<number[]>([]);
   docById = signal<number>(0);
   cdr = inject(ChangeDetectorRef);
+  isDocValidByChosenAllRequiredDitaTopics = signal<boolean>(false);
   selectedDocVersion = computed(() =>
     this.docService
       .getBy()
@@ -158,6 +149,7 @@ export class DocumentEditComponent implements OnInit {
   ditaTopicColumns: KTColumns[] = [
     { property: 'id', displayText: 'Id', dataType: 'n' },
     { property: 'title', displayText: 'Title', dataType: 's' },
+    { property: 'isRequired', displayText: 'Required', dataType: 'b' },
     {
       property: 'ditatopicVersions',
       displayText: 'No of versions',
@@ -185,16 +177,10 @@ export class DocumentEditComponent implements OnInit {
 
   Buttons: KTButtons[] = [
     {
-      name: 'edit',
-      actionName: 'edit',
+      name: 'view',
+      actionName: 'view',
       color: 'primary',
-      icon: 'edit',
-    },
-    {
-      name: 'delete',
-      actionName: 'del',
-      color: 'warn',
-      icon: 'delete',
+      icon: 'visibility',
     },
   ];
   dtBtns: KTButtons[] = [
@@ -211,34 +197,15 @@ export class DocumentEditComponent implements OnInit {
   onVersionSelected(topicId: number, version: DitatopicVersion) {
     this.selectedVersions[topicId] = version;
   }
-  onDitatopicButtonsClick(event: KTButtonClickEvent<DitaTopic>) {
-    switch (event.actionName) {
-      case 'edit':
-        this.EditDitaTopic(event.element);
-        break;
-      case 'del':
-        this.DeleteDitaTopic(event.element);
-        break;
-
-      case 'addVersions':
-        this.DitaTopicVersion(event.element);
-        break;
-    }
-  }
 
   onDitatopic_Versions_ButtonsClick(
     event: KTButtonClickEvent<DitatopicVersion>
   ) {
     this.onVersionSelected(this.selectedDitaTopic().id, event.element);
+    this.selectedVersion.set(event.element);
     switch (event.actionName) {
-      case 'design':
-        // this.DitaTopicVersion(event.row as DitaTopic, 'edit');
-        break;
-      case 'edit':
-        this.DitaTopicVersion(this.selectedDitaTopic(), 'edit');
-        break;
-      case 'del':
-        this.DeleteVersion(this.selectedDitaTopic().id);
+      case 'view':
+        this.DitaTopicVersion(this.selectedDitaTopic(), 'view');
         break;
     }
   }
@@ -249,20 +216,13 @@ export class DocumentEditComponent implements OnInit {
         DocumentsApi.AttachDitaTopic_Versions(this.docId(), this.versionId()),
         this.selectedDitaTopicVersions().map((v) => v.id) as any
       )
-      .subscribe((res) => {
-        this.docService.getBy.update(() => res);
-        let ditaTopic = this.docService
-          .getBy()
-          .ditaTopics.find((dt) => dt.id == this.selectedDitaTopic().id);
-        if (ditaTopic) {
-          this.selectedDitaTopic.set(ditaTopic);
-        }
+      .subscribe(() => {
         this.commonSignalService.loaderLoading.set(false);
+        this.getDoc();
       });
   }
   ngOnInit(): void {
     this.docService.getBySubsciption(DocumentsApi.getById(this.docId()));
-    this.docService.getBy();
     this.roleService.getAllSubsciption(authApi.getRoles());
     if (this.versionId()) {
       this.dtVersionsColumns.unshift({
@@ -273,62 +233,26 @@ export class DocumentEditComponent implements OnInit {
     }
   }
 
-  AddDitaTopic() {
-    const dialogRef = this.dialog.open(DitaTopicDialogComponent, {
-      data: { doc: this.docService.getBy() },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.ditaTopicService
-          .postObservable(DitaTopicsApi.create(), result)
-          .subscribe((res: any) => {
-            this.docService.getBy.update((d) => {
-              res.roles = res.roles.map((r: any) => r.roleId);
-              console.log(res);
-              d.ditaTopics = d.ditaTopics.concat(res as DitaTopic);
-              console.log(d.ditaTopics);
-              return d;
-            });
-          });
-      }
-    });
-  }
-
-  DeleteDitaTopic(dt: DitaTopic) {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {});
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.ditaTopicService.Delete(DitaTopicsApi.delete(dt.id));
-        this.docService.getBy.update((d) => {
-          d.ditaTopics = d.ditaTopics.filter((d) => d.id !== dt.id);
-          return d;
-        });
-      }
-    });
-  }
-
-  DitaTopicVersion(dt: DitaTopic, action: 'edit' | 'add' = 'add') {
+  DitaTopicVersion(dt: DitaTopic, action: 'edit' | 'add' | 'view' = 'add') {
     this.selectedDitaTopic.set(dt);
     const dialogRef = this.dialog.open(DitaTopicVersionComponent, {
-      data: { action: action, dt: dt, dtv: this.selectedVersions[dt.id] },
-      width: '45vw',
+      data: { action: action, dt: dt, dtv: this.selectedVersion() },
     });
     dialogRef.afterClosed().subscribe((result: DitaTopicVersionViewModel) => {
       if (result) {
         if (result.type === 1) result.body = ' ';
         if (action === 'add') {
-          this.ditaTopicService
-            .postObservable(DitaTopicsApi.createVersion(), result)
-            .subscribe((res) => {
-              this.updateTopicVersions(res as DitatopicVersion);
-            });
-        } else {
-          this.ditaTopicService
-            .putObservable(DitaTopicsApi.updateVersion(result.id), result)
-            .subscribe((res) => {
-              this.updateTopicVersions(res as DitatopicVersion);
-            });
+          this.ditaTopicService.postSubsciption(
+            DitaTopicsApi.createVersion(),
+            result
+          );
+        } else if (action === 'edit') {
+          this.ditaTopicService.putSubsciption(
+            DitaTopicsApi.updateVersion(result.id),
+            result
+          );
         }
+        this.getDoc();
       }
     });
   }
@@ -339,71 +263,41 @@ export class DocumentEditComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.ditaTopicService
-          .DeleteObservable(
-            DitaTopicsApi.deleteVersion(this.selectedVersions[ditatopicId].id)
-          )
-          .subscribe({
-            next: (res) => {
-              this.docService.getBy.update((d) => {
-                const topic = d.ditaTopics.find((d) => d.id === ditatopicId);
-                const dtVersions = topic?.ditatopicVersions.filter(
-                  (v) => v.id !== this.selectedVersions[ditatopicId].id
-                );
-                if (topic) {
-                  topic.ditatopicVersions = [...dtVersions!];
-                }
-                delete this.selectedVersions[ditatopicId];
-                return d;
-              });
-            },
-            error: (error) => {
-              console.error('There was an error!', error);
-            },
-          });
-      }
-    });
-  }
-
-  EditDitaTopic(dt: DitaTopic) {
-    const dialogRef = this.dialog.open(EditDitaTopicComponent, {
-      data: { doc: this.docService.getBy(), dt: dt },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
-        this.ditaTopicService
-          .putObservable(DitaTopicsApi.update(dt.id), result)
-          .subscribe((res) => {
-            let index = this.docService
-              .getBy()
-              .ditaTopics.findIndex((d) => d.id === dt.id);
-
-            this.docService.getBy.update((d) => {
-              let dita = [...d.ditaTopics];
-              dita.splice(index, 1, res as DitaTopic);
-              d.ditaTopics = dita;
-              return d;
-            });
-          });
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private updateTopicVersions(dtVersion: DitatopicVersion) {
-    this.docService.getBy.update((d) => {
-      const dt = d.ditaTopics.find((d) => d.id === this.selectedDitaTopic().id);
-      if (dt) {
-        const dtVersions = [...dt.ditatopicVersions];
-        dtVersions.splice(
-          dt.ditatopicVersions.findIndex((v) => v.id == dtVersion.id),
-          1,
-          dtVersion
+        this.ditaTopicService.Delete(
+          DitaTopicsApi.deleteVersion(this.selectedVersions[ditatopicId].id)
         );
-        dt.ditatopicVersions = [...dtVersions];
+        this.getDoc();
       }
-      this.onVersionSelected(this.selectedDitaTopic().id, dtVersion);
-      return d;
     });
+  }
+
+  //#endregion
+  CaptureChosenVersions(versions: DitatopicVersion[]) {
+    this.selectedDitaTopicVersions.set(versions);
+    let selectedDitaTopicsId = this.selectedDitaTopicVersions().map(
+      (v) => v.ditaTopicId
+    );
+    this.docService.getBy().ditaTopics?.forEach((dt) => {
+      dt.chosen = selectedDitaTopicsId.includes(dt.id);
+    });
+    this.updateStatusInTable();
+  }
+  getDoc() {
+    setTimeout(() => {
+      this.docService.getBySubsciption(DocumentsApi.getById(this.docId()));
+    }, 500);
+  }
+  evaluateRowClass(row: DitaTopic): { [key: string]: boolean } {
+    return {
+      required: row.isRequired && !row.chosen,
+      chosen: row.isRequired && row.chosen,
+    };
+  }
+  updateStatusInTable() {
+    this.isDocValidByChosenAllRequiredDitaTopics.set(
+      this.docService
+        .getBy()
+        .ditaTopics?.every((dt) => !dt.isRequired || dt.chosen) ?? false
+    );
   }
 }

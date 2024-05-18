@@ -10,6 +10,7 @@ import {
 import {
   DitaTopicModelView,
   DitaTopicType,
+  DitaTopicVersionViewModel,
   Documento,
   ModelFormGroup,
   StepViewModel,
@@ -174,7 +175,7 @@ export class DitaTopicDialogComponent {
 
   dtForm: ModelFormGroup<
     Pick<
-      DitaTopicModelView,
+      DitaTopicModelView | DitaTopicVersionViewModel,
       | 'steps'
       | 'body'
       | 'id'

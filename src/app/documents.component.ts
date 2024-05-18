@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import {
   KTButtonClickEvent,
   KTButtons,
@@ -12,11 +12,11 @@ import { ConfirmationDialogComponent } from '../dialogs/confirmation-dialog.comp
 import { MatButtonModule } from '@angular/material/button';
 import { AddDocDialogComponent } from '../dialogs/add-doc-dialog.component';
 import { DocumentsApi } from '../Models/Api';
-import { DOCUMENTS_SERVICE } from '../services/servicesTokens';
+import { DOCUMENTS_SERVICE, FAMILY_SERVICE } from '../services/servicesTokens';
 import { AuthService } from '../services/auth.service';
 import { DocVersionDialogComponent } from '../dialogs/doc-version-dialog.component';
 import { EditDocDialogComponent } from '../dialogs/edit-doc-dialog.component';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../environments/environment.development';
 
 @Component({
@@ -56,7 +56,10 @@ import { environment } from '../environments/environment.development';
 })
 export class DocumentsComponent implements OnInit {
   title = 'DitaTopic';
+  activatedRoute = inject(ActivatedRoute);
+
   docsService = inject(DOCUMENTS_SERVICE);
+  familyService = inject(FAMILY_SERVICE);
   AuthService = inject(AuthService);
   router = inject(Router);
   dialog = inject(MatDialog);
@@ -68,13 +71,15 @@ export class DocumentsComponent implements OnInit {
     },
     { property: 'title', displayText: 'Title', dataType: 's' },
     {
-      property: 'docVersions',
-      displayText: 'No. of Versions',
-      dataType: 'counted',
+      property: 'docFamily',
+      deepPropertyPath: ['docFamily', 'title'],
+      displayText: 'Family',
+      dataType: 's',
+      useDeepProperty: true,
     },
     {
-      property: 'ditaTopics',
-      displayText: 'No. of DitaTopics',
+      property: 'docVersions',
+      displayText: 'No. of Versions',
       dataType: 'counted',
     },
   ];
@@ -130,12 +135,16 @@ export class DocumentsComponent implements OnInit {
     this.saveSelectedVersion(this.selectedDoc().id, event.element);
     switch (event.actionName) {
       case 'design':
-        this.router.navigate([
-          'documents',
-          this.selectedDoc().id,
-          'versions',
-          event.element.id,
-        ]);
+        this.router.navigate(
+          [
+            this.selectedDoc().id,
+            'versions',
+            this.selectedVersions[this.selectedDoc().id].id,
+          ],
+          {
+            relativeTo: this.activatedRoute,
+          }
+        );
         break;
       case 'edit':
         this.addEditVersion(this.selectedDoc(), 'edit');
@@ -148,7 +157,7 @@ export class DocumentsComponent implements OnInit {
           `${environment.apiDomain}/${
             event.element.roles.filter(
               (r) => r.role?.name === this.AuthService.currentUser().roles[0]
-            )[0].pdFfilePath
+            )[0]?.pdFfilePath
           }`,
           '_blank'
         );
@@ -157,7 +166,6 @@ export class DocumentsComponent implements OnInit {
   }
   ngOnInit() {
     this.docsService.getAllSubsciption(DocumentsApi.getAll());
-
     if (this.AuthService.isAdminOrAnalyst()) {
       this.setDocButtons();
       this.setDocVersionsButtons();
@@ -168,10 +176,12 @@ export class DocumentsComponent implements OnInit {
         actionName: 'pdf',
         color: 'primary',
         icon: 'picture_as_pdf',
-        disabled: (ele: DocVersion) =>
-          ele?.roles.filter(
+        disabled: (ele: DocVersion) => {
+          let item = ele?.roles.filter(
             (r) => r.role?.name === this.AuthService.currentUser().roles[0]
-          )[0].pdFfilePath == '',
+          )[0];
+          return !item || item?.pdFfilePath == '';
+        },
       });
   }
 
@@ -190,7 +200,7 @@ export class DocumentsComponent implements OnInit {
 
   AddDocument() {
     const dialogRed = this.dialog.open(AddDocDialogComponent, {
-      width: '40vw',
+      data: { family: this.familyService.getBy() },
     });
 
     dialogRed.afterClosed().subscribe((result) => {

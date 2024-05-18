@@ -27,6 +27,6 @@ export const appConfig: ApplicationConfig = {
       withInterceptors([TokenResponseInterceptor])
     ),
     { provide: MAT_RIPPLE_GLOBAL_OPTIONS, useValue: { disabled: true } },
-    { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: { width: '45vw' } },
+    { provide: MAT_DIALOG_DEFAULT_OPTIONS, useValue: { width: '55vw' } },
   ],
 };

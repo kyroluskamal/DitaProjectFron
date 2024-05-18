@@ -1,5 +1,12 @@
 import { DatePipe, JsonPipe } from '@angular/common';
-import { Component, computed, inject, input, output } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { MatButtonModule, MatIconButton } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
@@ -20,6 +27,8 @@ export type KTColumns = {
   color?: 'warn' | 'primary';
   mapFun?: (element: any) => any;
   actionName?: string;
+  useDeepProperty?: boolean;
+  deepPropertyPath?: string[];
 };
 export type KTButtons = {
   name: string;
@@ -97,7 +106,16 @@ export type KTButtonClickEvent<T> = {
           @case('map'){
 
           {{ mapFunc(element[col.property], col.mapFun!) }}
-          } @case('btn'){
+          } @case('b'){
+          <!--  -->
+
+          @if(element[col.property]){
+          <mat-icon color="success">check</mat-icon>
+          } @else {
+          <mat-icon color="warn">close</mat-icon>
+          } }
+          <!--  -->
+          @case('btn'){
           <button
             [disabled]="col?.disabled(element[col.property])"
             mat-icon-button
@@ -108,12 +126,11 @@ export type KTButtonClickEvent<T> = {
           </button>
           }
           <!-- date -->
-          @default {
+          @default { @if (col.useDeepProperty) {
+          {{ getDeepProperty(element, col.deepPropertyPath!) }}
+          }@else {
           {{ element[col.property] }}
-          }
-          <!-- date -->
-
-          }
+          } } }
         </td>
       </ng-container>
       } }@for (b of Buttons(); track b) {
@@ -144,7 +161,11 @@ export type KTButtonClickEvent<T> = {
       </ng-container>
       }
       <tr mat-header-row *matHeaderRowDef="cols()"></tr>
-      <tr mat-row *matRowDef="let row; columns: cols()"></tr>
+      <tr
+        [class]="getRowClass(row)"
+        mat-row
+        *matRowDef="let row; columns: cols()"
+      ></tr>
     </table>
   `,
   styles: [
@@ -166,7 +187,7 @@ export class KTableComponent<T> {
   selection = computed(() => new SelectionModel<T>(true, this.selected_Rows()));
 
   OnButtonClick = output<KTButtonClickEvent<T>>();
-
+  rowClassConditions = input<(row: T) => { [key: string]: boolean }>();
   cols = computed(() => {
     let columns = this.columns().map((col) => col.property);
 
@@ -184,6 +205,7 @@ export class KTableComponent<T> {
   });
   OnRowClick = output<T>();
   onSelectedRows = output<T[]>();
+
   OnClick(element: T, actionName: string) {
     this.OnButtonClick.emit({ element, actionName });
   }
@@ -221,5 +243,19 @@ export class KTableComponent<T> {
   }
   mapFunc<T, U>(element: Iterable<T>, func: (item: T) => U) {
     return Array.from(element).map(func);
+  }
+
+  getDeepProperty<T>(obj: T, path: string[]): any {
+    return path.reduce((acc: any, key: string) => {
+      if (acc && typeof acc === 'object' && key in acc) {
+        return acc[key];
+      } else {
+        return undefined;
+      }
+    }, obj);
+  }
+  getRowClass(row: T) {
+    const rowClassFunc = this.rowClassConditions();
+    return rowClassFunc ? rowClassFunc(row) : {};
   }
 }

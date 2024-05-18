@@ -1,5 +1,27 @@
 import { environment } from '../environments/environment.development';
 
+export const DocFamilyApi = {
+  baseUrl: `${environment.apiUrl}/DocFamily`,
+
+  getById(id: number) {
+    return `${this.baseUrl}/${id}`;
+  },
+  getAll() {
+    return this.baseUrl;
+  },
+  create() {
+    return this.baseUrl;
+  },
+
+  update(id: number) {
+    return `${this.baseUrl}/${id}`;
+  },
+
+  delete(id: number) {
+    return `${this.baseUrl}/${id}`;
+  },
+};
+
 export const DocumentsApi = {
   baseUrl: `${environment.apiUrl}/Documents`,
 
@@ -83,6 +105,9 @@ export const DitaTopicsApi = {
 
   update(id: number) {
     return `${this.baseUrl}/${id}`;
+  },
+  updateMany() {
+    return `${this.baseUrl}`;
   },
 
   delete(id: number) {

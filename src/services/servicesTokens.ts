@@ -4,6 +4,8 @@ import {
   DitaTopicModelView,
   DitaTopicVersionViewModel,
   DitatopicVersion,
+  DocFamily,
+  DocFamilyViewModel,
   Documento,
   LoginRequest,
 } from '../Models/models';
@@ -15,6 +17,13 @@ export const DOCUMENTS_SERVICE = new InjectionToken<
 >('DOCUMENTS_SERVICE', {
   providedIn: 'root',
   factory: () => new GenericService<Documento, Documento>(),
+});
+export const FAMILY_SERVICE = new InjectionToken<
+  GenericService<DocFamily | DocFamilyViewModel, DocFamily>
+>('FAMILY_SERVICE', {
+  providedIn: 'root',
+  factory: () =>
+    new GenericService<DocFamily | DocFamilyViewModel, DocFamily>(),
 });
 export const DITATOPIC_SERVICE = new InjectionToken<
   GenericService<

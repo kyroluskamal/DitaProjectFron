@@ -36,7 +36,7 @@ import { CommonSignalsService } from '../services/common-signals.service';
     >
       <!-- Application Name -->
 
-      <span class="app-name cursor-pointer" routerLink="/documents"
+      <span class="app-name cursor-pointer" routerLink="/docfamilies"
         >Dita documentos</span
       >
 
@@ -45,6 +45,9 @@ import { CommonSignalsService } from '../services/common-signals.service';
         class="spacer flex-grow-1 d-flex flex-row justify-content-start margin-x"
       >
         <a mat-button routerLink="/documents">Documentos</a>
+        @if(this.AuthService.isAdminOrAnalyst()){
+        <a mat-button routerLink="/docfamilies">Families</a>
+        }
       </nav>
       <div>
         @if (AuthService.isloggedIn()) {

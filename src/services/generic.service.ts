@@ -58,7 +58,7 @@ export class GenericService<BodyType, ResponseType> {
       .post<SuccessResponse>(`${url}`, body, { headers: headers })
       .subscribe((res) => {
         this.notifications.sucess(res.message, 'Close');
-
+        console.log(res.data);
         this.postRes.set(res.data as ResponseType);
         this.getAllRes.update((d) => [...d, res.data as ResponseType]);
       });
@@ -103,7 +103,11 @@ export class GenericService<BodyType, ResponseType> {
       );
   }
 
-  public Delete(url: string, headers?: HttpHeaders) {
+  public Delete(
+    url: string,
+    action: Function | null = null,
+    headers?: HttpHeaders
+  ) {
     this.httpClient
       .delete<SuccessResponse>(`${url}`, { headers: headers })
       .subscribe({
@@ -116,6 +120,9 @@ export class GenericService<BodyType, ResponseType> {
           );
           this.notifications.sucess(res.message, 'Close');
           this.deleteRes.set(res as ResponseType);
+          if (action) {
+            action();
+          }
         },
         error: (error) => {
           console.error('There was an error!', error);
